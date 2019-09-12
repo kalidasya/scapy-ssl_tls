@@ -4,15 +4,12 @@
 Integration testsuite
     * quicktest examples: client, server, sniffer
 """
-from __future__ import with_statement
-from __future__ import print_function
+
 import unittest
-import socket
-import time
 import os
 import time
 
-from helper import wait_for_server, wait_for_bind_to_become_ready, PopenProcess, PythonInterpreter, OpenSslClient, OpenSslServer
+from .helper import wait_for_server, wait_for_bind_to_become_ready, PopenProcess, PythonInterpreter, OpenSslClient, OpenSslServer
 
 # global settings
 basedir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../"))
@@ -207,7 +204,7 @@ class TestExampleSnifferWithOpenSslServerAndClient(unittest.TestCase):
         # we cannot poll as this would mess up the server socket
         time.sleep(3)
         # connect with client (openssl)
-        for _ in xrange(50):
+        for _ in range(50):
             client = OpenSslClient(args=(self.bind))
             client.stdin.write("It works!\r\n\r\n")
             self.assertEqual(client.getReturnCode("Q\n"), 0)

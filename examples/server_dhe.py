@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import division, print_function
-
-
 try:
     # This import works from the project directory
     from scapy_ssl_tls.ssl_tls import *

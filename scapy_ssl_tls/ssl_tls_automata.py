@@ -5,8 +5,8 @@
 import socket
 import functools
 
-from ssl_tls import *
-from ssl_tls_crypto import *
+from .ssl_tls import *
+from .ssl_tls_crypto import *
 
 from scapy.automaton import Automaton, ATMT
 

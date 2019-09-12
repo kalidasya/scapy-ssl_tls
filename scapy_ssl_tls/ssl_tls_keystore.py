@@ -8,7 +8,6 @@ import warnings
 
 from Cryptodome.PublicKey import RSA
 from Cryptodome.Util.asn1 import DerSequence
-from scapy.asn1.asn1 import ASN1_SEQUENCE
 import tinyec.ec as ec
 import tinyec.registry as ec_reg
 
@@ -37,7 +36,7 @@ def rsa_public_from_der_certificate(certificate):
     # hex: 06 09 2A 86 48 86 F7 0D 01 01 01
     subject_public_key_info = None
     for seq in tbs_certificate:
-        if not isinstance(seq, basestring):
+        if not isinstance(seq, str):
             continue     # skip numerics and non sequence stuff
         if "\x2A\x86\x48\x86\xF7\x0D\x01\x01\x01" in seq:
             subject_public_key_info = seq
@@ -78,7 +77,7 @@ def int_to_vector(num, fmt="!H"):
 def str_to_int(str_):
     if str_ == "":
         return 0
-    return int(binascii.hexlify(str_), 16)
+    return int(binascii.hexlify(str_.encode('utf-8')), 16)
 
 
 def ansi_str_to_point(str_):

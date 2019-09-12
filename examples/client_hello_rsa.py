@@ -2,7 +2,6 @@
 # -*- coding: UTF-8 -*-
 # Author : tintinweb@oststrom.com <github.com/tintinweb>
 
-from __future__ import print_function
 import sys
 try:
     import scapy.all as scapy

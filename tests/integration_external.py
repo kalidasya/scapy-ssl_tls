@@ -12,15 +12,13 @@ Todo:
     * move common stuff to own module to have a clean testsuite
 
 """
-from __future__ import with_statement
-from __future__ import print_function
+
 from scapy.all import *
 from scapy_ssl_tls.ssl_tls import *
 import unittest
 import socket
-import time
 
-from helper import wait_for_server, OpenSslServer, JavaTlsServer, PythonTlsServer
+from .helper import wait_for_server, OpenSslServer, JavaTlsServer, PythonTlsServer
 
 basedir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../"))
 

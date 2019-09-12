@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 # Author : <github.com/tintinweb/scapy-ssl_tls>
 
-from __future__ import division
+
 import binascii
 import copy
 import os
@@ -13,9 +13,9 @@ import warnings
 
 import math
 
-import pkcs7
-import ssl_tls as tls
-import ssl_tls_keystore as tlsk
+from . import pkcs7
+from . import ssl_tls as tls
+from . import ssl_tls_keystore as tlsk
 import tinyec.ec as ec
 import tinyec.registry as ec_reg
 
@@ -25,6 +25,7 @@ from Cryptodome.Hash import HMAC, MD5, SHA, SHA256, SHA384
 from Cryptodome.PublicKey import DSA, RSA
 from Cryptodome.Signature import PKCS1_v1_5 as Sig_PKCS1_v1_5
 from scapy.packet import Raw
+
 
 # Added this to get all certificate dissection to work OK, without the need to import this in the client script
 # See: #PR31
@@ -742,15 +743,18 @@ class TLSPRF(object):
 
             xored = []
             for i in range(num_bytes):
-                xored.append(chr(ord(md5_bytes[i]) ^ ord(sha1_bytes[i])))
+                xored.append(chr(md5_bytes[i] ^ sha1_bytes[i]))
             bytes_ = "".join(xored)
         return bytes_
 
     def _get_bytes(self, digest, key, label, random, num_bytes):
-        bytes_ = ""
-        block = HMAC.new(key=key, msg="%s%s" % (label, random), digestmod=digest).digest()
+        bytes_ = b""
+        key = key.encode('utf-8')
+        msg = "{}{}".format(label, random).encode('utf-8')
+        block = HMAC.new(key=key, msg=msg, digestmod=digest).digest()
+        msg = "{}{}{}".format(block, label, random).encode('utf-8')
         while len(bytes_) < num_bytes:
-            bytes_ += HMAC.new(key=key, msg="%s%s%s" % (block, label, random), digestmod=digest).digest()
+            bytes_ += HMAC.new(key=key, msg=msg, digestmod=digest).digest()
             block = HMAC.new(key=key, msg=block, digestmod=digest).digest()
         return bytes_[:num_bytes]
 
@@ -1109,7 +1113,7 @@ class IAEADCryptoContext(CryptoContext):
         sequence = sequence or struct.pack("!Q", self.ctx.sequence).rjust(len(iv), b"\x00")
         if len(iv) != len(sequence):
             raise ValueError("IV and sequence length must be identical")
-        return b"".join([chr(ord(v) ^ ord(iv[i])) for i, v in enumerate(sequence)])
+        return b"".join([chr(v ^ iv[i]) for i, v in enumerate(sequence)])
 
     def encrypt_data(self, data):
         crypto_container = IAEADCryptoContainer.from_data(self.tls_ctx, self.ctx, data)
@@ -1337,7 +1341,7 @@ class NullHash(object):
         pass
 
     def digest(self):
-        return ""
+        return b""
 
     def hexdigest(self):
         return ""

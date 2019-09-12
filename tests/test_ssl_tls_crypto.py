@@ -40,13 +40,13 @@ class TestNullHash(unittest.TestCase):
     def test_null_hash_always_returns_empty_string(self):
         null_hash = tlsc.NullHash.new("initial_junk")
         null_hash.update("some more junk")
-        self.assertEqual("", null_hash.digest())
+        self.assertEqual(b"", null_hash.digest())
         self.assertEqual("", null_hash.hexdigest())
 
     def test_null_hash_with_pycrypto_hmac(self):
-        hmac = HMAC.new("secret", "stuff", digestmod=tlsc.NullHash)
-        hmac.update("some more stuff")
-        self.assertEqual("", hmac.digest())
+        hmac = HMAC.new(b"secret", b"stuff", digestmod=tlsc.NullHash)
+        hmac.update(b"some more stuff")
+        self.assertEqual(b"", hmac.digest())
         self.assertEqual("", hmac.hexdigest())
 
 
@@ -207,12 +207,12 @@ xVgf/Neb/avXgIgi6drj8dp1fWA=
         client_privkey = 5398526532442504864680398257365369432058147704829279760748758494328728516319
         client_pubkey = tls_ctx.get_client_dh_pubkey(client_privkey)
         self.assertEqual(
-            ("/T\xdc;\xc49\xa6\x8cD\xd4\xc1\x07I|\xb6\xc8\xaf\xb5\x04\xe9\xfb\t\x0e}\x14~\xa4\x1f\xdfo\x08u)Z\xb3\x0e"
-             "\x1c^\xa3x0\x90\xa1\xd7\x82\x9dLT\xa6^\xcc\xf7\xae\x87\x97\x86vi\x02s\x10\xb3\xdbo"),
+            (b"/T\xdc;\xc49\xa6\x8cD\xd4\xc1\x07I|\xb6\xc8\xaf\xb5\x04\xe9\xfb\t\x0e}\x14~\xa4\x1f\xdfo\x08u)Z\xb3\x0e"
+             b"\x1c^\xa3x0\x90\xa1\xd7\x82\x9dLT\xa6^\xcc\xf7\xae\x87\x97\x86vi\x02s\x10\xb3\xdbo"),
             client_pubkey)
         self.assertEqual(
-            ("}\xcae\xd2y\xd7F$\xde\"\xa9s\xfbNR9v\x19t9\x87\xa8\xa3\x9c\xccb]\x13\xb7\x8a\x8f\xdf\x7fv\x05\xa6\xf1\xa7"
-             "\xc8\xf4X\xe3\xd4\xac\xd6\x1e4\xb4\x1cc\xbb\xce\xbe\x94lQ\x91\xb9\xde\xb7\xa6gu_"),
+            (b"}\xcae\xd2y\xd7F$\xde\"\xa9s\xfbNR9v\x19t9\x87\xa8\xa3\x9c\xccb]\x13\xb7\x8a\x8f\xdf\x7fv\x05\xa6\xf1\xa7"
+             b"\xc8\xf4X\xe3\xd4\xac\xd6\x1e4\xb4\x1cc\xbb\xce\xbe\x94lQ\x91\xb9\xde\xb7\xa6gu_"),
             tlsk.int_to_str(tls_ctx.client_ctx.kex_keystore.get_psk(tls_ctx.server_ctx.kex_keystore.public)))
 
     def test_client_ecdh_parameters_generation_matches_fixed_data(self):
@@ -228,7 +228,7 @@ xVgf/Neb/avXgIgi6drj8dp1fWA=
         self.assertEqual("\x04%s%s" % (tlsk.int_to_str(client_keys.pub.x), tlsk.int_to_str(client_keys.pub.y)),
                          client_pubkey)
         self.assertEqual(client_keys.pub, tls_ctx.client_ctx.kex_keystore.public)
-        self.assertEqual("'(\x17\x94l\xd7AO\x03\xd4Fi\x05}mP\x1aX5C7\xf0_\xa9\xb0\xac\xba{r\x1f\x12\x8f",
+        self.assertEqual(b"'(\x17\x94l\xd7AO\x03\xd4Fi\x05}mP\x1aX5C7\xf0_\xa9\xb0\xac\xba{r\x1f\x12\x8f",
                          tls_ctx.premaster_secret)
 
     def test_after_tl13_server_hello_then_key_material_is_installed(self):
@@ -251,9 +251,9 @@ xVgf/Neb/avXgIgi6drj8dp1fWA=
         self.assertIsNotNone(tls_ctx.client_ctx.shares[0].private)
         self.assertEqual(client_keystore, tls_ctx.client_ctx.shares[0])
 
-        server_ec_pub = ("\x043\xc0\xd0D\xa6\xe8\x9c\xbf\xf7\x0e\xa1\x80\xdf\x15\n\xf3\x85\x7f\xf6\xb2\xa2\x01\xfc\xcf\x93FH"
-                         "\xed\xfa\x87\xb0\x19L\xc5\xb1\xd6\xf0\xcap?\xf1\xe7\x04\xc5\xde\xba/\xea\x1a\x86\xfb\xc9\rI\x9cU?r`"
-                         "\x18\xac\xb95\xc8")
+        server_ec_pub = (b"\x043\xc0\xd0D\xa6\xe8\x9c\xbf\xf7\x0e\xa1\x80\xdf\x15\n\xf3\x85\x7f\xf6\xb2\xa2\x01\xfc\xcf\x93FH"
+                         b"\xed\xfa\x87\xb0\x19L\xc5\xb1\xd6\xf0\xcap?\xf1\xe7\x04\xc5\xde\xba/\xea\x1a\x86\xfb\xc9\rI\x9cU?r`"
+                         b"\x18\xac\xb95\xc8")
         tls13_server_extensions = [tls.TLSExtension() / tls.TLSExtKeyShare() / tls.TLSServerHelloKeyShare(
             server_share=tls.TLSKeyShareEntry(named_group=tls.TLSSupportedGroup.SECP256R1, key_exchange=server_ec_pub))]
         server_hello = tls.TLSRecord() / tls.TLSHandshakes(handshakes=[tls.TLSHandshake() /
@@ -412,8 +412,8 @@ class TestTLSSecurityParameters(unittest.TestCase):
         # Creating the CryptoContext will set the IV to null if required
         tlsc.CBCCryptoContext(tls_ctx, tls_ctx.client_ctx)
         tlsc.CBCCryptoContext(tls_ctx, tls_ctx.server_ctx)
-        self.assertEqual(tls_ctx.client_ctx.sym_keystore.iv, "\x00" * 16)
-        self.assertEqual(tls_ctx.server_ctx.sym_keystore.iv, "\x00" * 16)
+        self.assertEqual(tls_ctx.client_ctx.sym_keystore.iv, b"\x00" * 16)
+        self.assertEqual(tls_ctx.server_ctx.sym_keystore.iv, b"\x00" * 16)
 
     def test_sec_params_generated_from_ms_match_sec_params_generated_from_pms(self):
         cipher_suite = 0x2f

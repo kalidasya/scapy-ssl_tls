@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from __future__ import with_statement
-from __future__ import print_function
 try:
     # This import works from the project directory
     from scapy_ssl_tls.ssl_tls import *

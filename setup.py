@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function
-from __future__ import with_statement
 import os
 import platform
 import re
@@ -29,7 +27,7 @@ def get_site_packages():
             site_packages.append(site_path)
     try:
         site_packages += _site.getsitepackages()
-    except AttributeError, ex:
+    except AttributeError as ex:
         print("WARNING: Error trying to call site.getsitepackages(). Exception: %r" % ex)
         print("         Do you have sufficient permissions?") 
         print("         Otherwise this could probably be virtualenv issue#355")
@@ -138,7 +136,7 @@ except (pkg_resources.DistributionNotFound, pkg_resources.VersionConflict):
 
 setup(
     name="scapy-ssl_tls",
-    version="2.0.0",
+    version="3.0.0",
     packages=["scapy_ssl_tls"],
     author="tintinweb",
     author_email="tintinweb@oststrom.com",
@@ -147,7 +145,7 @@ setup(
     license="GPLv2",
     keywords=["scapy", "ssl", "tls", "layer", "network", "dissect", "packets", "decrypt"],
     url="https://github.com/tintinweb/scapy-ssl_tls/",
-    download_url="https://github.com/tintinweb/scapy-ssl_tls/tarball/v2.0.0",
+    download_url="https://github.com/tintinweb/scapy-ssl_tls/tarball/v3.0.0",
     # generate rst from .md:  pandoc --from=markdown --to=rst README.md -o README.rst (fix diff section and footer)
     long_description=read("README.rst") if os.path.isfile("README.rst") else read("README.md"),
     install_requires=os_install_requires(),

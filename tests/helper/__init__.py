@@ -1,10 +1,8 @@
 #from scapy.all import *
-from __future__ import print_function
 import subprocess
 import socket
 import ssl
 from multiprocessing import Process
-import unittest
 import time
 import sys
 

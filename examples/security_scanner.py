@@ -9,7 +9,6 @@ An example implementation of a passive TLS security scanner with custom starttls
 
 
 """
-from __future__ import print_function
 import sys
 import concurrent.futures
 

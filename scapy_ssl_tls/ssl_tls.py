@@ -8,7 +8,7 @@ from scapy.layers.inet import TCP, UDP
 from scapy.layers import x509
 
 
-import ssl_tls_registry as registry
+from . import ssl_tls_registry as registry
 
 
 class BLenField(LenField):
@@ -241,7 +241,7 @@ class TypedPacketListField(PacketListField):
 class EnumStruct(object):
 
     def __init__(self, entries):
-        entries = dict((v.replace(' ', '_').upper(), k) for k, v in entries.iteritems())
+        entries = dict((v.replace(' ', '_').upper(), k) for k, v in entries.items())
         self.__dict__.update(entries)
 
 TLS_VERSIONS = {
@@ -371,8 +371,8 @@ TLSCertificateTypeIdentifier = EnumStruct(TLS_CERTIFICATE_TYPE_IDENTIFIERS)
 
 # Convert TLS 1.2 sig_hash values to TLS 1.3 sig schemes
 TLS_SIGNATURE_SCHEMES = {}
-for hash_alg, hash_name in TLS_HASH_ALGORITHMS.items():
-    for sig_alg, sig_name in TLS_SIGNATURE_ALGORITHMS.items():
+for hash_alg, hash_name in list(TLS_HASH_ALGORITHMS.items()):
+    for sig_alg, sig_name in list(TLS_SIGNATURE_ALGORITHMS.items()):
         TLS_SIGNATURE_SCHEMES[hash_alg << 8 | sig_alg] = "%s_%s" % (sig_name, hash_name)
 # Add or override with the new TLS 1.3 values
 TLS_SIGNATURE_SCHEMES.update({# RSA PKCS1v1.5 algorithms
@@ -974,7 +974,7 @@ class TLSDecryptablePacket(PacketLengthFieldPayload):
     def pre_dissect(self, raw_bytes):
         data = raw_bytes
         if self.tls_ctx is not None:
-            import ssl_tls_crypto as tlsc
+            from . import ssl_tls_crypto as tlsc
             hash_size = self.tls_ctx.sec_params.mac_key_length
             iv_size = self.tls_ctx.sec_params.iv_length
             # CBC mode
@@ -1234,7 +1234,7 @@ class TLSSocket(object):
             self.client = client
 
         if tls_ctx is None:
-            import ssl_tls_crypto as tlsc
+            from . import ssl_tls_crypto as tlsc
             self.tls_ctx = tlsc.TLSSessionCtx(self.client)
         else:
             self.tls_ctx = tls_ctx
@@ -1314,7 +1314,7 @@ class TLSSocket(object):
 
 # entry class
 class SSL(Packet):
-    __slots__ = ["tls_ctx", "_origin", "guessed_next_layer", "fields_desc"]
+    __slots__ = ["tls_ctx", "_origin", "guessed_next_layer"]  # TODO "fields_desc" causing troubles
     """
     COMPOUND CLASS for SSL
     """
@@ -1434,7 +1434,7 @@ cleartext_handler = {TLSPlaintext: lambda pkt, tls_ctx: (TLSContentType.APPLICAT
 
 
 def to_raw(pkt, tls_ctx, include_record=True, compress_hook=None, pre_encrypt_hook=None, encrypt_hook=None):
-    import ssl_tls_crypto as tlsc
+    from . import ssl_tls_crypto as tlsc
     if tls_ctx is None:
         raise ValueError("A valid TLS session context must be provided")
 
@@ -1442,7 +1442,7 @@ def to_raw(pkt, tls_ctx, include_record=True, compress_hook=None, pre_encrypt_ho
     comp_method = ctx.compression
 
     content_type, data = None, None
-    for tls_proto, handler in cleartext_handler.iteritems():
+    for tls_proto, handler in cleartext_handler.items():
         if pkt.haslayer(tls_proto):
             content_type, data = handler(pkt[tls_proto], tls_ctx)
             break

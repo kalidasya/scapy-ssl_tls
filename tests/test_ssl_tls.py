@@ -110,7 +110,7 @@ class TestTLSRecord(unittest.TestCase):
         #             set in the TLSHandhsake.type property.
         # self.assertTrue(self.stacked_handshake.haslayer(tls.TLSServerHelloDone))
         # check last handshake layer type
-        self.assertEquals(self.stacked_handshake[tls.TLSHandshakes].handshakes[2].type, tls.TLSHandshakeType.SERVER_HELLO_DONE)
+        self.assertEqual(self.stacked_handshake[tls.TLSHandshakes].handshakes[2].type, tls.TLSHandshakeType.SERVER_HELLO_DONE)
         # check TLS layers one by one
         self.assertEqual(re.findall(r'<(TLS[\w]+)', str(repr(self.stacked_handshake))),
                          ['TLSRecord', 'TLSHandshakes', 'TLSHandshake', 'TLSServerHello',
@@ -134,7 +134,7 @@ class TestTLSRecord(unittest.TestCase):
         fragments = pkt.fragment(frag_size)
         self.assertEqual(len(fragments.records), len(app_data) / frag_size + len(app_data) % frag_size)
         record_length = len(tls.TLSRecord())
-        self.assertTrue(all(list(map(lambda x: x.haslayer(tls.TLSRecord), fragments.records))))
+        self.assertTrue(all(list([x.haslayer(tls.TLSRecord) for x in fragments.records])))
         self.assertEqual(len(fragments.records[0]), record_length + frag_size)
         self.assertEqual(len(fragments.records[1]), record_length + frag_size)
         self.assertEqual(len(fragments.records[2]), record_length + (len(app_data) % frag_size))
@@ -395,22 +395,22 @@ class TestTLSClientHello(unittest.TestCase):
         p = tls.SSL(str(self.pkt))
         record = p.records[0]
         extensions = record[tls.TLSClientHello].extensions
-        self.assertEquals(extensions.pop()[tls.TLSExtRenegotiationInfo].data, "myreneginfo")
-        self.assertEquals(extensions.pop()[tls.TLSExtSessionTicketTLS].data, "myticket")
-        self.assertEquals(extensions.pop()[tls.TLSExtHeartbeat].mode, tls.TLSHeartbeatMode.PEER_NOT_ALLOWED_TO_SEND)
-        self.assertEquals(extensions.pop()[tls.TLSExtSupportedGroups].named_group_list[0], tls.TLSSupportedGroup.SECT571R1)
-        self.assertEquals(extensions.pop()[tls.TLSExtECPointsFormat].ec_point_formats[0],
+        self.assertEqual(extensions.pop()[tls.TLSExtRenegotiationInfo].data, "myreneginfo")
+        self.assertEqual(extensions.pop()[tls.TLSExtSessionTicketTLS].data, "myticket")
+        self.assertEqual(extensions.pop()[tls.TLSExtHeartbeat].mode, tls.TLSHeartbeatMode.PEER_NOT_ALLOWED_TO_SEND)
+        self.assertEqual(extensions.pop()[tls.TLSExtSupportedGroups].named_group_list[0], tls.TLSSupportedGroup.SECT571R1)
+        self.assertEqual(extensions.pop()[tls.TLSExtECPointsFormat].ec_point_formats[0],
                           tls.TLSEcPointFormat.ANSIX962_COMPRESSED_CHAR2)
-        self.assertEquals(extensions.pop()[tls.TLSExtCertificateURL].certificate_urls[0].url,
+        self.assertEqual(extensions.pop()[tls.TLSExtCertificateURL].certificate_urls[0].url,
                           "http://www.github.com/tintinweb")
-        self.assertEquals(extensions.pop()[tls.TLSExtMaxFragmentLength].fragment_length, 0x03)
-        self.assertEquals(extensions.pop()[tls.TLSExtALPN].protocol_name_list[0].data, "http/2.0")
+        self.assertEqual(extensions.pop()[tls.TLSExtMaxFragmentLength].fragment_length, 0x03)
+        self.assertEqual(extensions.pop()[tls.TLSExtALPN].protocol_name_list[0].data, "http/2.0")
         ext = extensions.pop()
-        self.assertEquals(ext[tls.TLSExtALPN].protocol_name_list[1].data, "http/1.0")
-        self.assertEquals(ext[tls.TLSExtALPN].protocol_name_list[0].data, "http/1.1")
+        self.assertEqual(ext[tls.TLSExtALPN].protocol_name_list[1].data, "http/1.0")
+        self.assertEqual(ext[tls.TLSExtALPN].protocol_name_list[0].data, "http/1.1")
         ext = extensions.pop()
-        self.assertEquals(ext[tls.TLSExtServerNameIndication].server_names[1].data, "github.com")
-        self.assertEquals(ext[tls.TLSExtServerNameIndication].server_names[0].data, "www.github.com")
+        self.assertEqual(ext[tls.TLSExtServerNameIndication].server_names[1].data, "github.com")
+        self.assertEqual(ext[tls.TLSExtServerNameIndication].server_names[0].data, "www.github.com")
 
     def test_dissect_client_hello_conditional_extensions_length(self):
         hello = tls.SSL(str(self.pkt))[tls.TLSClientHello]
@@ -555,7 +555,7 @@ class TestPCAP(unittest.TestCase):
         record = pkts.pop()
         self.assertTrue(record.haslayer(tls.TLSRecord))
         self.assertTrue(record.haslayer(tls.TLSHandshakes))
-        self.assertEquals(record[tls.TLSHandshake].type, tls.TLSHandshakeType.SERVER_HELLO_DONE)
+        self.assertEqual(record[tls.TLSHandshake].type, tls.TLSHandshakeType.SERVER_HELLO_DONE)
         # client key exchange
         record = pkts.pop()
         self.assertTrue(record.haslayer(tls.TLSRecord))
@@ -578,7 +578,7 @@ class TestPCAP(unittest.TestCase):
         # TLSFinished - encrypted
         record = pkts.pop()
         self.assertTrue(record.haslayer(tls.TLSRecord))
-        self.assertEquals(record[tls.TLSRecord].content_type, tls.TLSContentType.HANDSHAKE)
+        self.assertEqual(record[tls.TLSRecord].content_type, tls.TLSContentType.HANDSHAKE)
         self.assertTrue(record.haslayer(tls.TLSCiphertext))
         self.assertEqual(record[tls.TLSRecord].length, 0x30)
         self.assertEqual(
@@ -604,18 +604,18 @@ class TestPCAP(unittest.TestCase):
         # TLSFinished - encrypted
         record = pkts.pop()
         self.assertTrue(record.haslayer(tls.TLSRecord))
-        self.assertEquals(record[tls.TLSRecord].content_type, tls.TLSContentType.HANDSHAKE)
+        self.assertEqual(record[tls.TLSRecord].content_type, tls.TLSContentType.HANDSHAKE)
         self.assertTrue(record.haslayer(tls.TLSCiphertext))
         self.assertEqual(
             record[
                 tls.TLSCiphertext].data,
             '%\xb8X\xc1\xa6?\xf8\xbd\xe6\xae\xbd\x98\xd4u\xa5E\x1b\xd8jpy\x86)NOd\xba\xe7\x1f\xcaK\x96\x9b\xf7\x0bP\xf5O\xfd\xda\xda\xcd\xcdK\x12.\xdf\xd5')
         # some more encrypted traffic
-        for _ in xrange(6):
+        for _ in range(6):
             # Application data - encrypted - 6 times
             record = pkts.pop()
             self.assertTrue(record.haslayer(tls.TLSRecord))
-            self.assertEquals(record[tls.TLSRecord].content_type, tls.TLSContentType.APPLICATION_DATA)
+            self.assertEqual(record[tls.TLSRecord].content_type, tls.TLSContentType.APPLICATION_DATA)
             self.assertTrue(record.haslayer(tls.TLSCiphertext))
             self.assertEqual(record.length, len(record[tls.TLSCiphertext].data))
         # check if there are any more pakets?
@@ -734,7 +734,7 @@ xVgf/Neb/avXgIgi6drj8dp1fWA=
             self.assertEqual(crypto_container.crypto_data.data, "\x14\x00\x00\x0c%s" % self.tls_ctx.get_verify_data())
             self.assertEqual(len(crypto_container.mac), SHA.digest_size)
             self.assertEqual(len(crypto_container.padding), 11)
-            self.assertTrue(all(map(lambda x: True if x == chr(11) else False, crypto_container.padding)))
+            self.assertTrue(all([True if x == chr(11) else False for x in crypto_container.padding]))
             return "A" * 48
 
         client_finished = tls.TLSRecord(content_type=0x16) / tls.to_raw(tls.TLSHandshakes(handshakes=[tls.TLSHandshake() /
