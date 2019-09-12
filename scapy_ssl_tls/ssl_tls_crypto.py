@@ -708,13 +708,13 @@ TLS Session Context:
 
 
 class TLSPRF(object):
-    TLS_MD_CLIENT_FINISH_CONST = "client finished"
-    TLS_MD_SERVER_FINISH_CONST = "server finished"
-    TLS_MD_KEY_EXPANSION_CONST = "key expansion"
-    TLS_MD_CLIENT_WRITE_KEY_CONST = "client write key"
-    TLS_MD_SERVER_WRITE_KEY_CONST = "server write key"
-    TLS_MD_IV_BLOCK_CONST = "IV block"
-    TLS_MD_MASTER_SECRET_CONST = "master secret"
+    TLS_MD_CLIENT_FINISH_CONST = b"client finished"
+    TLS_MD_SERVER_FINISH_CONST = b"server finished"
+    TLS_MD_KEY_EXPANSION_CONST = b"key expansion"
+    TLS_MD_CLIENT_WRITE_KEY_CONST = b"client write key"
+    TLS_MD_SERVER_WRITE_KEY_CONST = b"server write key"
+    TLS_MD_IV_BLOCK_CONST = b"IV block"
+    TLS_MD_MASTER_SECRET_CONST = b"master secret"
 
     def __init__(self, tls_version, digest=None):
         if tls_version not in tls.TLS_VERSIONS.keys():
@@ -749,7 +749,8 @@ class TLSPRF(object):
 
     def _get_bytes(self, digest, key, label, random, num_bytes):
         bytes_ = b""
-        key = key.encode('utf-8')
+        if isinstance(key, str):
+            key = key.encode('utf-8')
         msg = "{}{}".format(label, random).encode('utf-8')
         block = HMAC.new(key=key, msg=msg, digestmod=digest).digest()
         msg = "{}{}{}".format(block, label, random).encode('utf-8')
@@ -1021,6 +1022,9 @@ class CBCCryptoContext(CryptoContext):
             self.__init_ciphers()
 
     def __init_ciphers(self):
+        print("SHITSHIT {} {}".format(self.ctx.__class__, self.ctx.sym_keystore.__class__))
+        print("SHIT {} {} {}".format(self.ctx.sym_keystore.key, len(self.ctx.sym_keystore.key), self.ctx.sym_keystore))
+
         self.enc_cipher = self.sec_params.cipher_type.new(self.ctx.sym_keystore.key, mode=self.sec_params.cipher_mode,
                                                           IV=self.ctx.sym_keystore.iv)
         self.dec_cipher = self.sec_params.cipher_type.new(self.ctx.sym_keystore.key, mode=self.sec_params.cipher_mode,

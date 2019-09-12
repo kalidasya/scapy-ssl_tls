@@ -176,16 +176,16 @@ xVgf/Neb/avXgIgi6drj8dp1fWA=
         # tls_ctx.rsa_load_keys(self.pem_priv_key)
         client_hello = tls.TLSRecord() / tls.TLSHandshakes(handshakes=[tls.TLSHandshake() / tls.TLSClientHello(version=version,
                                                                                                                gmt_unix_time=1234,
-                                                                                                               random_bytes="A" * 28)])
+                                                                                                               random_bytes=b"A" * 28)])
         # Hello Request should be ignored in verify_data calculation
         tls_ctx.insert(tls.TLSHelloRequest())
         tls_ctx.insert(client_hello)
-        tls_ctx.premaster_secret = "B" * 48
-        epms = "C" * 256
+        tls_ctx.premaster_secret = b"B" * 48
+        epms = b"C" * 256
         server_hello = tls.TLSRecord(version=version) / tls.TLSHandshakes(handshakes=[tls.TLSHandshake() / tls.TLSServerHello(version=version,
                                                                                                                               gmt_unix_time=1234,
                                                                                                                               session_id="",
-                                                                                                                              random_bytes="A" * 28)])
+                                                                                                                              random_bytes=b"A" * 28)])
         tls_ctx.insert(server_hello)
         client_kex = tls.TLSRecord(version=version) / tls.TLSHandshakes(handshakes=[tls.TLSHandshake() / tls.TLSClientKeyExchange() /
             tls.TLSClientRSAParams(data=epms)])

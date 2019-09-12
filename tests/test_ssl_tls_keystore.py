@@ -55,7 +55,7 @@ class TestTLSKeystoreTopLevelFunctions(unittest.TestCase):
     def test_when_ansi_string_is_malformed_then_exception_is_raised(self):
         x, y = int(binascii.hexlify(b"123"), 16), int(binascii.hexlify(b"456"), 16)
         with self.assertRaises(ValueError):
-            tlsk.ansi_str_to_point("1234")
+            tlsk.ansi_str_to_point(b"1234")
         with self.assertRaises(ValueError):
-            tlsk.ansi_str_to_point("\x04123")
-        self.assertEqual(tlsk.ansi_str_to_point("\x04123456"), (x, y))
+            tlsk.ansi_str_to_point(b"\x04123")
+        self.assertEqual(tlsk.ansi_str_to_point(b"\x04123456"), (x, y))

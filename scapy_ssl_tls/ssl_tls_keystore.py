@@ -77,11 +77,11 @@ def int_to_vector(num, fmt="!H"):
 def str_to_int(str_):
     if str_ == "":
         return 0
-    return int(binascii.hexlify(str_.encode('utf-8')), 16)
+    return int(binascii.hexlify(str_), 16)
 
 
 def ansi_str_to_point(str_):
-    if not str_.startswith("\x04"):
+    if not str_.startswith(b"\x04"):
         raise ValueError("ANSI octet string missing point prefix (0x04)")
     str_ = str_[1:]
     if len(str_) % 2 != 0:
@@ -260,7 +260,13 @@ class SymKeyStore(object):
 
     def __init__(self, name, key=b""):
         self.name = name
+        if isinstance(name, str):
+            self.name = name.encode('utf-8')
+
         self.key = key
+        if isinstance(key, str):
+            self.key = key.encode('utf-8')
+
         self.size = len(self.key) * 8
 
 
