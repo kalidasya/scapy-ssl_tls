@@ -55,7 +55,7 @@ class BLenField(LenField):
         """Extract an internal value from a string"""
         upack_data = s[:self.sz]
         # prepend struct.calcsize()-len(data) bytes to satisfy struct.unpack
-        upack_data = '\x00' * (struct.calcsize(self.fmt) - self.sz) + upack_data
+        upack_data = b'\x00' * (struct.calcsize(self.fmt) - self.sz) + upack_data
         return s[self.sz:], self.m2i(pkt, struct.unpack(self.fmt, upack_data)[0])
 
     def i2m(self, pkt, x):
@@ -119,7 +119,7 @@ class BEnumField(EnumField):
         """Extract an internal value from a string"""
         upack_data = s[:self.sz]
         # prepend struct.calcsize()-len(data) bytes to satisfy struct.unpack
-        upack_data = '\x00' * (struct.calcsize(self.fmt) - self.sz) + upack_data
+        upack_data = b'\x00' * (struct.calcsize(self.fmt) - self.sz) + upack_data
 
         return s[self.sz:], self.m2i(pkt, struct.unpack(self.fmt, upack_data)[0])
 
@@ -903,7 +903,7 @@ class TLSCertificateList(Packet):
     def guess_payload_class(self, payload):
         tls13_cert = TLS13Certificate(payload)
         tls10_cert = TLS10Certificate(payload)
-        certs_len = lambda certs: len(b"".join([str(cert) for cert in certs.certificates]))
+        certs_len = lambda certs: len(b"".join([cert for cert in certs.certificates]))
         if tls13_cert.request_context_length == len(tls13_cert.request_context) and tls13_cert.length == certs_len(tls13_cert):
             return TLS13Certificate
         elif tls10_cert.length == certs_len(tls10_cert):
@@ -981,7 +981,7 @@ class TLSDecryptablePacket(PacketLengthFieldPayload):
             # CBC mode
             if self.tls_ctx.sec_params.cipher_mode_name == tlsc.CipherMode.CBC:
                 try:
-                    self.padding_len = ord(raw_bytes[-1])
+                    self.padding_len = raw_bytes[-1]
                     self.padding = raw_bytes[-self.padding_len - 1:-1]
                     self.mac = raw_bytes[-self.padding_len - hash_size - 1:-self.padding_len - 1]
                     if self.tls_ctx.requires_iv:
@@ -1089,7 +1089,7 @@ class TLSPlaintext(TLSDecryptablePacket):
 
 class TLSChangeCipherSpec(TLSDecryptablePacket):
     name = "TLS ChangeCipherSpec"
-    fields_desc = [StrField("message", '\x01', fmt="H")]
+    fields_desc = [StrField("message", b'\x01', fmt="H")]
 
 
 class TLSAlert(TLSDecryptablePacket):
@@ -1274,9 +1274,9 @@ class TLSSocket(object):
         prev_timeout = self._s.gettimeout()
         self._s.settimeout(timeout)
         if self.ctx.must_encrypt:
-            self._s.sendall(str(tls_to_raw(pkt, self.tls_ctx, True, self.compress_hook, self.pre_encrypt_hook, self.encrypt_hook)))
+            self._s.sendall(tls_to_raw(pkt, self.tls_ctx, True, self.compress_hook, self.pre_encrypt_hook, self.encrypt_hook))
         else:
-            self._s.sendall(str(pkt))
+            self._s.sendall(pkt)
         self.tls_ctx.insert(pkt, self._get_pkt_origin('out'))
         self._s.settimeout(prev_timeout)
 
@@ -1331,14 +1331,14 @@ class SSL(Packet):
 
     @classmethod
     def from_records(cls, records, ctx=None):
-        pkt_str = "".join(list(map(str, records)))
+        pkt_str = b"".join(map(bytes, records))
         return cls(pkt_str, ctx)
 
     def pre_dissect(self, raw_bytes):
         # figure out if we're UDP or TCP
         if self.underlayer is not None and self.underlayer.haslayer(UDP):
             self.guessed_next_layer = DTLSRecord
-        elif ord(raw_bytes[0]) & 0x80:
+        elif raw_bytes[0] & 0x80:
             self.guessed_next_layer = SSLv2Record
         else:
             self.guessed_next_layer = TLSRecord
@@ -1390,7 +1390,7 @@ class SSL(Packet):
                         layer = TLS.CONTENT_TYPE_MAP[content_type]
                     except KeyError:
                         raise TLSProtocolError("Decryption failed. Invalid 0x%02x content_type in payload" % content_type, response=record)
-                    cleartext = "%s%s" % (cleartext, tag)
+                    cleartext = b"".join([cleartext, tag])
                 pkt = layer(cleartext, ctx=self.tls_ctx)
                 record[self.guessed_next_layer].payload = pkt
                 record.content_type = content_type or record.content_type
@@ -1405,14 +1405,14 @@ class SSL(Packet):
         # TLSFinished, encrypted
         if record.haslayer(TLSRecord) and record[TLSRecord].content_type == TLSContentType.HANDSHAKE \
                 and record.haslayer(TLSCiphertext):
-            encrypted_payload = str(record.payload)
+            encrypted_payload = record.payload
             decrypted_type = TLSHandshakes
         # Do not attempt to decrypt cleartext Alerts and CCS
         elif record.haslayer(TLSAlert) and record.length != 0x2:
-            encrypted_payload = str(record.payload)
+            encrypted_payload = record.payload
             decrypted_type = TLSAlert
         elif record.haslayer(TLSChangeCipherSpec) and record.length != 0x1:
-            encrypted_payload = str(record.payload)
+            encrypted_payload = record.payload
             decrypted_type = TLSChangeCipherSpec
         # Application data
         elif record.haslayer(TLSCiphertext):
@@ -1429,9 +1429,9 @@ def find_padding_start(payload, padding_byte=b"\x00"):
 
 
 cleartext_handler = {TLSPlaintext: lambda pkt, tls_ctx: (TLSContentType.APPLICATION_DATA, pkt[TLSPlaintext].data),
-                     TLSChangeCipherSpec: lambda pkt, tls_ctx: (TLSContentType.CHANGE_CIPHER_SPEC, str(pkt[TLSChangeCipherSpec])),
-                     TLSAlert: lambda pkt, tls_ctx: (TLSContentType.ALERT, str(pkt[TLSAlert])), #}
-                     TLSHandshakes: lambda pkt, tls_ctx: (TLSContentType.HANDSHAKE, str(pkt[TLSHandshakes]))}
+                     TLSChangeCipherSpec: lambda pkt, tls_ctx: (TLSContentType.CHANGE_CIPHER_SPEC, pkt[TLSChangeCipherSpec]),
+                     TLSAlert: lambda pkt, tls_ctx: (TLSContentType.ALERT, pkt[TLSAlert]), #}
+                     TLSHandshakes: lambda pkt, tls_ctx: (TLSContentType.HANDSHAKE, pkt[TLSHandshakes])}
 
 
 def to_raw(pkt, tls_ctx, include_record=True, compress_hook=None, pre_encrypt_hook=None, encrypt_hook=None):
@@ -1538,7 +1538,7 @@ def tls_do_handshake(tls_socket, version, ciphers, extensions=[]):
 def tls_fragment_payload(pkt, record=None, size=2**14):
     if size <= 0:
         raise ValueError("Fragment size must be strictly positive")
-    payload = str(pkt)
+    payload = bytes(pkt)
     payloads = [payload[i: i + size] for i in range(0, len(payload), size)]
     if record is None:
         return payloads

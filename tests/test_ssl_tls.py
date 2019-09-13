@@ -21,21 +21,21 @@ def env_local_file(file):
 
 class TestSSLv2Record(unittest.TestCase):
     def setUp(self):
-        self.client_hello = tls.SSLv2Record(length=1234)/tls.SSLv2ClientHello(challenge="12345")/"TEST"
-        self.client_hello_serialized_expected = '\x84\xd2\x01\x00\x02\x00\x00\x00\x00\x00\x0512345TEST'
+        self.client_hello = tls.SSLv2Record(length=1234) / tls.SSLv2ClientHello(challenge=b"12345") / b"TEST"
+        self.client_hello_serialized_expected = b'\x84\xd2\x01\x00\x02\x00\x00\x00\x00\x00\x0512345TEST'
         # this is: http://www.pcapr.net/view/mu/ssl-v2-2.pcap.html
-        self.real_client_hello = '\x801\x01\x00\x02\x00\x18\x00\x00\x00\x10\x07\x00\xc0\x05\x00\x80\x03\x00\x80\x01\x00\x80\x08\x00\x80\x06\x00@\x04\x00\x80\x02\x00\x80vdu-\xa7\x98\xfe\xc9\x12\x92\xc1/4\x84 \xc5'
+        self.real_client_hello = b'\x801\x01\x00\x02\x00\x18\x00\x00\x00\x10\x07\x00\xc0\x05\x00\x80\x03\x00\x80\x01\x00\x80\x08\x00\x80\x06\x00@\x04\x00\x80\x02\x00\x80vdu-\xa7\x98\xfe\xc9\x12\x92\xc1/4\x84 \xc5'
 
     def test_sslv2_de_serialize(self):
-        pkt_serialized = str(tls.SSL(records=self.client_hello))
-        self.assertEqual(pkt_serialized, self.client_hello_serialized_expected)
-        pkt = tls.SSL(pkt_serialized)
+        pkt_serialized = tls.SSL(records=self.client_hello)
+        self.assertEqual(bytes(pkt_serialized), self.client_hello_serialized_expected)
+        pkt = tls.SSL(bytes(pkt_serialized))
         self.assertTrue(pkt.haslayer(tls.SSL))
         self.assertTrue(pkt.haslayer(tls.SSLv2Record))
         self.assertTrue(pkt.haslayer(Raw))
         self.assertEqual(pkt[tls.SSLv2Record].length, 1234)
-        self.assertEqual(pkt[tls.SSLv2ClientHello].challenge, "12345")
-        self.assertEqual(pkt[Raw].load, "TEST")
+        self.assertEqual(pkt[tls.SSLv2ClientHello].challenge, b"12345")
+        self.assertEqual(pkt[Raw].load, b"TEST")
 
     def test_sslv2_real_client_hello(self):
         pkt = tls.SSL(self.real_client_hello)
@@ -43,12 +43,12 @@ class TestSSLv2Record(unittest.TestCase):
         self.assertTrue(pkt.haslayer(tls.SSLv2Record))
         self.assertEqual(pkt[tls.SSLv2Record].length, 0x31)
         self.assertEqual(pkt[tls.SSLv2ClientHello].version, tls.TLSVersion.SSL_2_0)
-        self.assertEqual(pkt[tls.SSLv2ClientHello].challenge, 'vdu-\xa7\x98\xfe\xc9\x12\x92\xc1/4\x84 \xc5')
-        self.assertEqual(pkt[tls.SSLv2ClientHello].challenge_length, len('vdu-\xa7\x98\xfe\xc9\x12\x92\xc1/4\x84 \xc5'))
+        self.assertEqual(pkt[tls.SSLv2ClientHello].challenge, b'vdu-\xa7\x98\xfe\xc9\x12\x92\xc1/4\x84 \xc5')
+        self.assertEqual(pkt[tls.SSLv2ClientHello].challenge_length, len(b'vdu-\xa7\x98\xfe\xc9\x12\x92\xc1/4\x84 \xc5'))
         self.assertEqual(pkt[tls.SSLv2ClientHello].cipher_suites_length, 0x18)
         self.assertEqual(pkt[tls.SSLv2ClientHello].cipher_suites, [0x700c0, 0x50080, 0x30080, 0x10080, 0x80080, 0x60040, 0x40080, 0x20080])
         self.assertEqual(len(pkt[tls.SSLv2ClientHello].cipher_suites), 8)
-        self.assertEqual(pkt[tls.SSLv2ClientHello].session_id, '')
+        self.assertEqual(pkt[tls.SSLv2ClientHello].session_id, b'')
         self.assertEqual(pkt[tls.SSLv2ClientHello].session_id_length, 0x0)
 
 
@@ -60,15 +60,16 @@ class TestTLSRecord(unittest.TestCase):
         self.server_hello_done = tls.TLSRecord() / tls.TLSHandshakes(handshakes=[tls.TLSHandshake() / tls.TLSServerHelloDone()])
         self.stacked_pkt = tls.TLS.from_records([self.server_hello, self.cert_list, self.server_hello_done])
         # issue 28
-        der_cert = '0\x82\x03\xe70\x82\x02\xcf\xa0\x03\x02\x01\x02\x02\t\x00\xb9\xee\xd4\xd9U\xa5\x9e\xb30\r\x06\t*\x86H\x86\xf7\r\x01\x01\x05\x05\x000p1\x0b0\t\x06\x03U\x04\x06\x13\x02UK1\x160\x14\x06\x03U\x04\n\x0c\rOpenSSL Group1"0 \x06\x03U\x04\x0b\x0c\x19FOR TESTING PURPOSES ONLY1%0#\x06\x03U\x04\x03\x0c\x1cOpenSSL Test Intermediate CA0\x1e\x17\r111208140148Z\x17\r211016140148Z0d1\x0b0\t\x06\x03U\x04\x06\x13\x02UK1\x160\x14\x06\x03U\x04\n\x0c\rOpenSSL Group1"0 \x06\x03U\x04\x0b\x0c\x19FOR TESTING PURPOSES ONLY1\x190\x17\x06\x03U\x04\x03\x0c\x10Test Server Cert0\x82\x01"0\r\x06\t*\x86H\x86\xf7\r\x01\x01\x01\x05\x00\x03\x82\x01\x0f\x000\x82\x01\n\x02\x82\x01\x01\x00\xf3\x84\xf3\x926\xdc\xb2F\xcafz\xe5)\xc5\xf3I("\xd3\xb9\xfe\xe0\xde\xe48\xce\xee"\x1c\xe9\x91;\x94\xd0r/\x87\x85YKf\xb1\xc5\xf5z\x85]\xc2\x0f\xd3.)X6\xccHk\xa2\xa2\xb5&\xceg\xe2G\xb6\xdfI\xd2?\xfa\xa2\x10\xb7\xc2\x97D~\x874mm\xf2\x8b\xb4U+\xd6!\xdeSK\x90\xea\xfd\xea\xf985+\xf4\xe6\x9a\x0e\xf6\xbb\x12\xab\x87!\xc3/\xbc\xf4\x06\xb8\x8f\x8e\x10\x07\'\x95\xe5B\xcb\xd1\xd5\x10\x8c\x92\xac\xee\x0f\xdc#H\x89\xc9\xc6\x93\x0c"\x02\xe7t\xe7%\x00\xab\xf8\x0f\\\x10\xb5\x85;f\x94\xf0\xfbMW\x06U!"%\xdb\xf3\xaa\xa9`\xbfM\xaay\xd1\xab\x92H\xba\x19\x8e\x12\xech\xd9\xc6\xba\xdf\xecZ\x1c\xd8C\xfe\xe7R\xc9\xcf\x02\xd0\xc7\x7f\xc9~\xb0\x94\xe3SDX\x0b.\xfd)t\xb5\x06\x9b\\D\x8d\xfb2u\xa4:\xa8g{\x872\nP\x8d\xe1\xa2\x13J%\xaf\xe6\x1c\xb1%\xbf\xb4\x99\xa2S\xd3\xa2\x02\xbf\x11\x02\x03\x01\x00\x01\xa3\x81\x8f0\x81\x8c0\x0c\x06\x03U\x1d\x13\x01\x01\xff\x04\x020\x000\x0e\x06\x03U\x1d\x0f\x01\x01\xff\x04\x04\x03\x02\x05\xe00,\x06\t`\x86H\x01\x86\xf8B\x01\r\x04\x1f\x16\x1dOpenSSL Generated Certificate0\x1d\x06\x03U\x1d\x0e\x04\x16\x04\x14\x82\xbc\xcf\x00\x00\x13\xd1\xf79%\x9a\'\xe7\xaf\xd2\xef \x1bn\xac0\x1f\x06\x03U\x1d#\x04\x180\x16\x80\x146\xc3l\x88\xe7\x95\xfe\xb0\xbd\xec\xce>=\x86\xab!\x81\x87\xda\xda0\r\x06\t*\x86H\x86\xf7\r\x01\x01\x05\x05\x00\x03\x82\x01\x01\x00\xa9\xbdMW@t\xfe\x96\xe9+\xd6x\xfd\xb3c\xcc\xf4\x0bM\x12\xcaZt\x8d\x9b\xf2a\xe6\xfd\x06\x11C\x84\xfc\x17\xa0\xeccc6\xb9\x9e6j\xb1\x02Zj[?j\xa1\xea\x05e\xac~@\x1aHe\x88\xd19M\xd3Kw\xe9\xc8\xbb+\x9eZ\xf4\x0849G\xb9\x02\x081\x9a\xf1\xd9\x17\xc5\xe9\xa6\xa5\x96Km@\xa9[e(\xcb\xcb\x00\x03\x82c7\xd3\xad\xb1\x96;v\xf5\x17\x16\x02{\xbdSSFr4\xd6\x08d\x9d\xbbC\xfbd\xb1I\x07w\tazB\x17\x110\x0c\xd9\'\\\xf5q\xb6\xf0\x180\xf3~\xf1\x85?2~J\xaf\xb3\x10\xf7l\xc6\x85K-\'\xad\n \\\xfb\x8d\x19p4\xb9u_|\x87\xd5\xc3\xec\x93\x13A\xfcs\x03\xb9\x8d\x1a\xfe\xf7&\x86I\x03\xa9\xc5\x82?\x80\r)I\xb1\x8f\xed$\x1b\xfe\xcfX\x90F\xe7\xa8\x87\xd4\x1ey\xef\x99m\x18\x9f>\x8b\x82\x07\xc1C\xc7\xe0%\xb6\xf1\xd3\x00\xd7@\xabK\x7f+z>\xa6\x99LT'
+        der_cert = b'0\x82\x03\xe70\x82\x02\xcf\xa0\x03\x02\x01\x02\x02\t\x00\xb9\xee\xd4\xd9U\xa5\x9e\xb30\r\x06\t*\x86H\x86\xf7\r\x01\x01\x05\x05\x000p1\x0b0\t\x06\x03U\x04\x06\x13\x02UK1\x160\x14\x06\x03U\x04\n\x0c\rOpenSSL Group1"0 \x06\x03U\x04\x0b\x0c\x19FOR TESTING PURPOSES ONLY1%0#\x06\x03U\x04\x03\x0c\x1cOpenSSL Test Intermediate CA0\x1e\x17\r111208140148Z\x17\r211016140148Z0d1\x0b0\t\x06\x03U\x04\x06\x13\x02UK1\x160\x14\x06\x03U\x04\n\x0c\rOpenSSL Group1"0 \x06\x03U\x04\x0b\x0c\x19FOR TESTING PURPOSES ONLY1\x190\x17\x06\x03U\x04\x03\x0c\x10Test Server Cert0\x82\x01"0\r\x06\t*\x86H\x86\xf7\r\x01\x01\x01\x05\x00\x03\x82\x01\x0f\x000\x82\x01\n\x02\x82\x01\x01\x00\xf3\x84\xf3\x926\xdc\xb2F\xcafz\xe5)\xc5\xf3I("\xd3\xb9\xfe\xe0\xde\xe48\xce\xee"\x1c\xe9\x91;\x94\xd0r/\x87\x85YKf\xb1\xc5\xf5z\x85]\xc2\x0f\xd3.)X6\xccHk\xa2\xa2\xb5&\xceg\xe2G\xb6\xdfI\xd2?\xfa\xa2\x10\xb7\xc2\x97D~\x874mm\xf2\x8b\xb4U+\xd6!\xdeSK\x90\xea\xfd\xea\xf985+\xf4\xe6\x9a\x0e\xf6\xbb\x12\xab\x87!\xc3/\xbc\xf4\x06\xb8\x8f\x8e\x10\x07\'\x95\xe5B\xcb\xd1\xd5\x10\x8c\x92\xac\xee\x0f\xdc#H\x89\xc9\xc6\x93\x0c"\x02\xe7t\xe7%\x00\xab\xf8\x0f\\\x10\xb5\x85;f\x94\xf0\xfbMW\x06U!"%\xdb\xf3\xaa\xa9`\xbfM\xaay\xd1\xab\x92H\xba\x19\x8e\x12\xech\xd9\xc6\xba\xdf\xecZ\x1c\xd8C\xfe\xe7R\xc9\xcf\x02\xd0\xc7\x7f\xc9~\xb0\x94\xe3SDX\x0b.\xfd)t\xb5\x06\x9b\\D\x8d\xfb2u\xa4:\xa8g{\x872\nP\x8d\xe1\xa2\x13J%\xaf\xe6\x1c\xb1%\xbf\xb4\x99\xa2S\xd3\xa2\x02\xbf\x11\x02\x03\x01\x00\x01\xa3\x81\x8f0\x81\x8c0\x0c\x06\x03U\x1d\x13\x01\x01\xff\x04\x020\x000\x0e\x06\x03U\x1d\x0f\x01\x01\xff\x04\x04\x03\x02\x05\xe00,\x06\t`\x86H\x01\x86\xf8B\x01\r\x04\x1f\x16\x1dOpenSSL Generated Certificate0\x1d\x06\x03U\x1d\x0e\x04\x16\x04\x14\x82\xbc\xcf\x00\x00\x13\xd1\xf79%\x9a\'\xe7\xaf\xd2\xef \x1bn\xac0\x1f\x06\x03U\x1d#\x04\x180\x16\x80\x146\xc3l\x88\xe7\x95\xfe\xb0\xbd\xec\xce>=\x86\xab!\x81\x87\xda\xda0\r\x06\t*\x86H\x86\xf7\r\x01\x01\x05\x05\x00\x03\x82\x01\x01\x00\xa9\xbdMW@t\xfe\x96\xe9+\xd6x\xfd\xb3c\xcc\xf4\x0bM\x12\xcaZt\x8d\x9b\xf2a\xe6\xfd\x06\x11C\x84\xfc\x17\xa0\xeccc6\xb9\x9e6j\xb1\x02Zj[?j\xa1\xea\x05e\xac~@\x1aHe\x88\xd19M\xd3Kw\xe9\xc8\xbb+\x9eZ\xf4\x0849G\xb9\x02\x081\x9a\xf1\xd9\x17\xc5\xe9\xa6\xa5\x96Km@\xa9[e(\xcb\xcb\x00\x03\x82c7\xd3\xad\xb1\x96;v\xf5\x17\x16\x02{\xbdSSFr4\xd6\x08d\x9d\xbbC\xfbd\xb1I\x07w\tazB\x17\x110\x0c\xd9\'\\\xf5q\xb6\xf0\x180\xf3~\xf1\x85?2~J\xaf\xb3\x10\xf7l\xc6\x85K-\'\xad\n \\\xfb\x8d\x19p4\xb9u_|\x87\xd5\xc3\xec\x93\x13A\xfcs\x03\xb9\x8d\x1a\xfe\xf7&\x86I\x03\xa9\xc5\x82?\x80\r)I\xb1\x8f\xed$\x1b\xfe\xcfX\x90F\xe7\xa8\x87\xd4\x1ey\xef\x99m\x18\x9f>\x8b\x82\x07\xc1C\xc7\xe0%\xb6\xf1\xd3\x00\xd7@\xabK\x7f+z>\xa6\x99LT'
         stacked_handshake_layers = tls.TLSRecord() / tls.TLSHandshakes(handshakes=
                                                                        [tls.TLSHandshake() / tls.TLSServerHello(),
                                                                         tls.TLSHandshake() / tls.TLSCertificateList() / tls.TLS10Certificate(
                                                                             certificates=[tls.TLSCertificate(data=x509.X509_Cert(der_cert))]),
                                                                         tls.TLSHandshake() / tls.TLSServerHelloDone()])
-        self.stacked_handshake = tls.TLS(str(stacked_handshake_layers))
+
+        self.stacked_handshake = tls.TLS(bytes(stacked_handshake_layers))
             # str(tls.TLSRecord(content_type="handshake") / "".join(list(map(str, stacked_handshake_layers)))))
-        self.empty_tls_handshake_serialized_expected = '\x16\x03\x01\x00\x04\x01\x00\x00\x00'
+        self.empty_tls_handshake_serialized_expected = b'\x16\x03\x01\x00\x04\x01\x00\x00\x00'
         unittest.TestCase.setUp(self)
 
     def test_pkt_tls_de_serialize(self):
@@ -82,17 +83,17 @@ class TestTLSRecord(unittest.TestCase):
         pkt[tls.TLSRecord].length == 0x04
 
     def test_empty_handshake_serializes_to_known_data(self):
-        self.assertEqual(str(tls.TLSRecord() / tls.TLSHandshakes(handshakes=tls.TLSHandshake())), self.empty_tls_handshake_serialized_expected)
+        self.assertEqual(bytes(tls.TLSRecord() / tls.TLSHandshakes(handshakes=tls.TLSHandshake())), self.empty_tls_handshake_serialized_expected)
 
     def test_pkt_built_from_stacked_tls_records_is_identical(self):
-        self.assertEqual(len(str(self.server_hello)), len(str(self.stacked_pkt.records[0])))
-        self.assertEqual(len(str(self.cert_list)), len(str(self.stacked_pkt.records[1])))
-        self.assertEqual(len(str(self.server_hello_done)), len(str(self.stacked_pkt.records[2])))
-        self.assertEqual(len(str(self.server_hello)) - len(tls.TLSRecord()),
+        self.assertEqual(len(self.server_hello), len(self.stacked_pkt.records[0]))
+        self.assertEqual(len(self.cert_list), len(self.stacked_pkt.records[1]))
+        self.assertEqual(len(self.server_hello_done), len(self.stacked_pkt.records[2]))
+        self.assertEqual(len(self.server_hello) - len(tls.TLSRecord()),
                          self.stacked_pkt.records[0][tls.TLSRecord].length)
-        self.assertEqual(len(str(self.cert_list)) - len(tls.TLSRecord()),
+        self.assertEqual(len(self.cert_list) - len(tls.TLSRecord()),
                          self.stacked_pkt.records[1][tls.TLSRecord].length)
-        self.assertEqual(len(str(self.server_hello_done)) - len(tls.TLSRecord()),
+        self.assertEqual(len(self.server_hello_done) - len(tls.TLSRecord()),
                          self.stacked_pkt.records[2][tls.TLSRecord].length)
 
     def test_pkt_built_from_stacked_tls_handshakes_is_identical(self):
@@ -124,15 +125,15 @@ class TestTLSRecord(unittest.TestCase):
         # pkt = tls.TLSRecord(content_type=tls.TLSContentType.HANDSHAKE) / ("S"*33)
         fragments = pkt.fragment(7)
         self.assertIsInstance(fragments, tls.TLS)
-        self.assertEqual(len(fragments.records), len(str(pkt)) / 7)
+        self.assertEqual(len(fragments.records), len(bytes(pkt)) // 7)
         self.assertEqual(fragments.records[0].length, 7)
 
     def test_fragmenting_a_record_returns_a_list_of_records_when_fragment_size_is_smaller_than_record(self):
         frag_size = 3
-        app_data = "A" * 7
+        app_data = b"A" * 7
         pkt = tls.TLSRecord(version=tls.TLSVersion.TLS_1_1, content_type=tls.TLSContentType.APPLICATION_DATA) / app_data
         fragments = pkt.fragment(frag_size)
-        self.assertEqual(len(fragments.records), len(app_data) / frag_size + len(app_data) % frag_size)
+        self.assertEqual(len(fragments.records), len(app_data) // frag_size + len(app_data) % frag_size)
         record_length = len(tls.TLSRecord())
         self.assertTrue(all(list([x.haslayer(tls.TLSRecord) for x in fragments.records])))
         self.assertEqual(len(fragments.records[0]), record_length + frag_size)
@@ -140,15 +141,15 @@ class TestTLSRecord(unittest.TestCase):
         self.assertEqual(len(fragments.records[2]), record_length + (len(app_data) % frag_size))
 
     def test_fragmenting_a_record_does_nothing_when_fragment_size_is_larger_than_record(self):
-        app_data = "A" * 7
+        app_data = b"A" * 7
         frag_size = len(app_data)
         pkt = tls.TLSRecord(version=tls.TLSVersion.TLS_1_1, content_type=tls.TLSContentType.APPLICATION_DATA) / app_data
-        self.assertEqual(str(pkt), str(pkt.fragment(frag_size)))
+        self.assertEqual(bytes(pkt), bytes(pkt.fragment(frag_size)))
         frag_size = len(app_data) * 2
-        self.assertEqual(str(pkt), str(pkt.fragment(frag_size)))
+        self.assertEqual(bytes(pkt), bytes(pkt.fragment(frag_size)))
 
     def test_large_record_payload_is_not_fragmented_when_smaller_then_max_ushort(self):
-        app_data = "A" * tls.TLSRecord.MAX_LEN
+        app_data = b"A" * tls.TLSRecord.MAX_LEN
         pkt = tls.TLSRecord(version=tls.TLSVersion.TLS_1_1, content_type=tls.TLSContentType.APPLICATION_DATA) / app_data
         try:
             str(pkt)
@@ -156,7 +157,7 @@ class TestTLSRecord(unittest.TestCase):
             self.fail()
 
     def test_large_record_payload_is_fragmented_when_above_max_ushort(self):
-        app_data = "A" * (tls.TLSRecord.MAX_LEN + 1)
+        app_data = b"A" * (tls.TLSRecord.MAX_LEN + 1)
         pkt = tls.TLSRecord(version=tls.TLSVersion.TLS_1_1, content_type=tls.TLSContentType.APPLICATION_DATA) / app_data
         with self.assertRaises(tls.TLSFragmentationError):
             str(pkt)
@@ -696,7 +697,7 @@ xVgf/Neb/avXgIgi6drj8dp1fWA=
         raw = tls.to_raw(pkt, self.tls_ctx, include_record=False)
         record = tls.TLSRecord() / raw
         self.assertEqual(len(record[tls.TLSRecord]) - 0x5, len(raw))
-        self.assertEqual(str(record[tls.TLSRecord].payload), raw)
+        self.assertEqual(bytes(record[tls.TLSRecord].payload), raw)
 
     def test_all_hooks_are_called_when_defined(self):
         # Return the data twice, but do not compress
@@ -731,16 +732,16 @@ xVgf/Neb/avXgIgi6drj8dp1fWA=
 
     def test_format_of_tls_finished_is_as_specified_in_rfc(self):
         def encrypt(crypto_container):
-            self.assertEqual(crypto_container.crypto_data.data, "\x14\x00\x00\x0c%s" % self.tls_ctx.get_verify_data())
+            self.assertEqual(bytes(crypto_container.crypto_data.data), b"".join([b"\x14\x00\x00\x0c", self.tls_ctx.get_verify_data()]))
             self.assertEqual(len(crypto_container.mac), SHA.digest_size)
             self.assertEqual(len(crypto_container.padding), 11)
-            self.assertTrue(all([True if x == chr(11) else False for x in crypto_container.padding]))
-            return "A" * 48
+            self.assertTrue(all([True if x == 11 else False for x in crypto_container.padding]))
+            return b"A" * 48
 
         client_finished = tls.TLSRecord(content_type=0x16) / tls.to_raw(tls.TLSHandshakes(handshakes=[tls.TLSHandshake() /
                                                                                                       tls.TLSFinished(data=self.tls_ctx.get_verify_data())]),
                                                                         self.tls_ctx, include_record=False, encrypt_hook=encrypt)
-        pkt = tls.TLS(str(client_finished))
+        pkt = tls.TLS(bytes(client_finished))
         # 4 bytes of TLSHandshake header, 12 bytes of verify_data, 20 bytes of
         # HMAC SHA1, 11 bytes of padding, 1 padding length byte
         self.assertEqual(pkt[tls.TLSRecord].length, len(tls.TLSHandshake()) + 12 + SHA.digest_size + 11 + 1)

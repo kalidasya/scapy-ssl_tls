@@ -30,7 +30,8 @@ from scapy.packet import Raw
 # Added this to get all certificate dissection to work OK, without the need to import this in the client script
 # See: #PR31
 # Do not move this under ssl_tls.py, it will break one UT. I have no clue as to why
-from scapy.all import conf
+from scapy.all import conf, Packet
+
 """
 https://tools.ietf.org/html/rfc4346#section-6.3
     key_block = PRF(SecurityParameters.master_secret,
@@ -1261,17 +1262,26 @@ class CBCCryptoContainer(CryptoContainer):
         content_type_ = struct.pack("!B", self.crypto_data.content_type)
         version_ = struct.pack("!H", self.crypto_data.version)
         len_ = struct.pack("!H", self.crypto_data.data_len)
-        self.digest.update(b"".join([sequence_, content_type_, version_, len_, self.crypto_data.data]))
+        data = self.crypto_data.data
+        if isinstance(data, Packet):
+            data = bytes(data)
+        self.digest.update(b"".join([sequence_, content_type_, version_, len_, data]))
         self.mac = self.digest.digest()
 
     def __pad(self):
         # "\xff" is a dummy trailing byte, to increase the length of imput
         # data by one byte. Any byte could do. This is to account for the
         # trailing padding_length byte in the RFC
-        self.padding = self.pkcs7.get_padding(b"".join([self.crypto_data.data, self.mac, b"\xff"]))
+        data = self.crypto_data.data
+        if isinstance(data, Packet):
+            data = bytes(data)
+        self.padding = self.pkcs7.get_padding(b"".join([data, self.mac, b"\xff"]))
 
     def __bytes__(self):
-        return b"".join([self.explicit_iv, self.crypto_data.data, self.mac, self.padding, bytes(self.padding_len, encoding='utf-8')])
+        data = self.crypto_data.data
+        if isinstance(data, Packet):
+            data = bytes(data)
+        return b"".join([self.explicit_iv, data, self.mac, self.padding, bytes(self.padding_len, encoding='utf-8')])
 
     def __str__(self):
         return "%s%s%s%s%s" % (self.explicit_iv.decode('utf-8'),
