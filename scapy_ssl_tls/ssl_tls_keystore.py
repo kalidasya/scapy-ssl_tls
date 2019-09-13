@@ -84,6 +84,8 @@ def ansi_str_to_point(str_):
     if not str_.startswith(b"\x04"):
         raise ValueError("ANSI octet string missing point prefix (0x04)")
     str_ = str_[1:]
+    print("str_ {} {}".format(str_, len(str_)))
+
     if len(str_) % 2 != 0:
         raise ValueError("Can't parse curve point. Odd ANSI string length")
     half = len(str_) // 2
@@ -91,7 +93,7 @@ def ansi_str_to_point(str_):
 
 
 def point_to_ansi_str(point):
-    return "\x04%s%s" % (int_to_str(point.x), int_to_str(point.y))
+    return b"".join([b"\x04", int_to_str(point.x), int_to_str(point.y)])
 
 
 def tls_group_to_keystore(named_group_id, point_str):

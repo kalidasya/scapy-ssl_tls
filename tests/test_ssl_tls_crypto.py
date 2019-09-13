@@ -116,7 +116,7 @@ xVgf/Neb/avXgIgi6drj8dp1fWA=
         tls_ctx.insert(pkt)
         self.assertEqual(tls_ctx.negotiated.compression_algo,
                          tlsc.TLSCompressionParameters.comp_params[compression_method]["name"])
-        input_ = "some data" * 16
+        input_ = b"some data" * 16
         self.assertEqual(tls_ctx.client_ctx.compression.decompress(tls_ctx.client_ctx.compression.compress(input_)),
                          input_)
 
@@ -190,13 +190,14 @@ xVgf/Neb/avXgIgi6drj8dp1fWA=
         client_kex = tls.TLSRecord(version=version) / tls.TLSHandshakes(handshakes=[tls.TLSHandshake() / tls.TLSClientKeyExchange() /
             tls.TLSClientRSAParams(data=epms)])
         tls_ctx.insert(client_kex)
-        self.assertEqual(client_verify_data, binascii.hexlify(tls_ctx.get_verify_data()))
+
+        self.assertEqual(bytes(client_verify_data, encoding='utf-8'), binascii.hexlify(tls_ctx.get_verify_data()))
         # Make sure that client finish is included in server finish calculation
         tls_ctx.set_mode(server=True)
         verify_data = tls_ctx.get_verify_data()
         client_finish = tls.TLSRecord(version=version) / tls.TLSHandshakes(handshakes=[tls.TLSHandshake() / tls.TLSFinished(data=verify_data)])
         tls_ctx.insert(client_finish)
-        self.assertEqual(server_verify_data, binascii.hexlify(verify_data))
+        self.assertEqual(bytes(server_verify_data, encoding='utf-8'), binascii.hexlify(verify_data))
 
     def test_client_dh_parameters_generation_matches_fixed_data(self):
         tls_ctx = tlsc.TLSSessionCtx()
@@ -224,8 +225,8 @@ xVgf/Neb/avXgIgi6drj8dp1fWA=
         client_privkey = 15320484772785058360598040144348894600917526501829289880527760633524785596585
         client_keys = ec.Keypair(secp256r1, client_privkey)
         client_pubkey = tls_ctx.get_client_ecdh_pubkey(client_privkey)
-        self.assertTrue(client_pubkey.startswith("\x04"))
-        self.assertEqual("\x04%s%s" % (tlsk.int_to_str(client_keys.pub.x), tlsk.int_to_str(client_keys.pub.y)),
+        self.assertTrue(client_pubkey.startswith(b"\x04"))
+        self.assertEqual(b"\x04%s%s" % (tlsk.int_to_str(client_keys.pub.x), tlsk.int_to_str(client_keys.pub.y)),
                          client_pubkey)
         self.assertEqual(client_keys.pub, tls_ctx.client_ctx.kex_keystore.public)
         self.assertEqual(b"'(\x17\x94l\xd7AO\x03\xd4Fi\x05}mP\x1aX5C7\xf0_\xa9\xb0\xac\xba{r\x1f\x12\x8f",
