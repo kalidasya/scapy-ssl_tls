@@ -1028,7 +1028,7 @@ class StreamCryptoContext(CryptoContext):
         return self.encrypt(crypto_container)
 
     def encrypt(self, crypto_container):
-        ciphertext = self.enc_cipher.encrypt(crypto_container)
+        ciphertext = self.enc_cipher.encrypt(bytes(crypto_container))
         self.ctx.sequence += 1
         return ciphertext
 
@@ -1064,7 +1064,7 @@ class CBCCryptoContext(CryptoContext):
     def encrypt(self, crypto_container):
         if self.tls_ctx.requires_iv:
             self.__init_ciphers()
-        ciphertext = self.enc_cipher.encrypt(crypto_container)
+        ciphertext = self.enc_cipher.encrypt(bytes(crypto_container))
         self.ctx.sequence += 1
         return ciphertext
 
@@ -1100,7 +1100,7 @@ class EAEADCryptoContext(CryptoContext):
     def encrypt(self, crypto_container):
         self.__init_ciphers(self.get_nonce())
         self.enc_cipher.update(crypto_container.aead)
-        ciphertext, mac = self.enc_cipher.encrypt_and_digest(crypto_container)
+        ciphertext, mac = self.enc_cipher.encrypt_and_digest(bytes(crypto_container))
         bytes_ = b"".join([struct.pack("!Q", self.ctx.nonce), ciphertext, mac])
         self.ctx.nonce += 1
         self.ctx.sequence += 1
@@ -1197,7 +1197,7 @@ class CryptoContainer(object):
         raise NotImplementedError()
 
     def __len__(self):
-        return len(str(self))
+        return len(bytes(self))
 
 
 class StreamCryptoContainer(CryptoContainer):
@@ -1223,6 +1223,9 @@ class StreamCryptoContainer(CryptoContainer):
         len_ = struct.pack("!H", self.crypto_data.data_len)
         self.digest.update(b"".join([sequence_, content_type_, version_, len_, self.crypto_data.data]))
         self.mac = self.digest.digest()
+
+    def __bytes__(self):
+        return b"".join([self.crypto_data, self.mac])
 
     def __str__(self):
         raise Exception("NOOOOOO")
@@ -1268,6 +1271,9 @@ class CBCCryptoContainer(CryptoContainer):
         # trailing padding_length byte in the RFC
         self.padding = self.pkcs7.get_padding(b"".join([self.crypto_data.data, self.mac, b"\xff"]))
 
+    def __bytes__(self):
+        return b"".join([self.explicit_iv, self.crypto_data.data, self.mac, self.padding, bytes(self.padding_len, encoding='utf-8')])
+
     def __str__(self):
         raise Exception("NO NO NO")
         return "%s%s%s%s%s" % (self.explicit_iv, self.crypto_data.data, self.mac, self.padding, self.padding_len)
@@ -1295,8 +1301,11 @@ class EAEADCryptoContainer(CryptoContainer):
         len_ = struct.pack("!H", self.crypto_data.data_len)
         self.aead = b"".join([sequence_, content_type_, version_, len_])
 
-    def __str__(self):
+    def __bytes__(self):
         return self.crypto_data.data
+
+    def __str__(self):
+        return self.crypto_data.data.decode('utf-8')
 
 
 class IAEADCryptoContainer(CryptoContainer):

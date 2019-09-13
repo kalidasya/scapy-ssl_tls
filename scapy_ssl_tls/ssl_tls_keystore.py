@@ -84,7 +84,6 @@ def ansi_str_to_point(str_):
     if not str_.startswith(b"\x04"):
         raise ValueError("ANSI octet string missing point prefix (0x04)")
     str_ = str_[1:]
-    print("str_ {} {}".format(str_, len(str_)))
 
     if len(str_) % 2 != 0:
         raise ValueError("Can't parse curve point. Odd ANSI string length")
