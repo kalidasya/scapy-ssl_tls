@@ -965,11 +965,12 @@ class TLSDecryptablePacket(PacketLengthFieldPayload):
             del(fields["ctx"])
             if self.explicit_iv_field not in self.fields_desc and self.tls_ctx.requires_iv:
                 self.fields_desc.append(self.explicit_iv_field)
-            for field in self.decryptable_fields:
-                if field not in self.fields_desc:
-                    self.fields_desc.append(field)
         except KeyError:
             self.tls_ctx = None
+
+        for field in self.decryptable_fields:
+            if field not in self.fields_desc:
+                self.fields_desc.append(field)
         PacketLengthFieldPayload.__init__(self, *args, **fields)
 
     def pre_dissect(self, raw_bytes):
