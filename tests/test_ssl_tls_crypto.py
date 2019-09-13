@@ -548,7 +548,7 @@ xVgf/Neb/avXgIgi6drj8dp1fWA=
         crypto_data = tlsc.CryptoData.from_context(self.tls_ctx, self.tls_ctx.client_ctx, data)
         crypto_container = tlsc.CBCCryptoContainer.from_context(self.tls_ctx, self.tls_ctx.client_ctx, crypto_data)
         padding = crypto_container.padding
-        self.assertEqual("%s%s%s%s" % (data, crypto_container.mac, padding, chr(len(padding))), str(crypto_container))
+        self.assertEqual(b"".join([data, crypto_container.mac, padding, bytes(chr(len(padding)), encoding='utf-8')]), bytes(crypto_container))
 
     def test_cbc_cipher_payload_is_block_size_aligned(self):
         data = b"A" * 1025
@@ -560,10 +560,9 @@ xVgf/Neb/avXgIgi6drj8dp1fWA=
         data = b"C" * 102
         self.tls_ctx.client = False
         crypto_container = tlsc.CBCCryptoContainer.from_data(self.tls_ctx, self.tls_ctx.server_ctx, data)
-        cleartext = str(crypto_container)
         crypto_ctx = tlsc.CBCCryptoContext(self.tls_ctx, self.tls_ctx.server_ctx)
         ciphertext = crypto_ctx.encrypt_data(data)
-        self.assertEqual(cleartext, crypto_ctx.decrypt(ciphertext))
+        self.assertEqual(bytes(crypto_container), crypto_ctx.decrypt(ciphertext))
 
     def test_generated_mac_can_be_overiden(self):
         data = b"C" * 102
@@ -582,13 +581,13 @@ xVgf/Neb/avXgIgi6drj8dp1fWA=
         crypto_container = tlsc.CBCCryptoContainer.from_data(self.tls_ctx, self.tls_ctx.server_ctx, data)
         self.assertNotEqual(crypto_container.explicit_iv, b"")
         self.assertEqual(len(crypto_container.explicit_iv), AES.block_size)
-        self.assertTrue(str(crypto_container).startswith(crypto_container.explicit_iv))
+        self.assertTrue(bytes(crypto_container).startswith(crypto_container.explicit_iv))
 
     def test_tls_1_0_and_below_has_no_explicit_iv(self):
         data = b"C" * 102
         crypto_container = tlsc.CBCCryptoContainer.from_data(self.tls_ctx, self.tls_ctx.server_ctx, data)
         self.assertEqual(crypto_container.explicit_iv, b"")
-        self.assertTrue(str(crypto_container).startswith(data))
+        self.assertTrue(bytes(crypto_container).startswith(data))
 
 
 class TestTLSPRF(unittest.TestCase):

@@ -1228,8 +1228,7 @@ class StreamCryptoContainer(CryptoContainer):
         return b"".join([self.crypto_data, self.mac])
 
     def __str__(self):
-        raise Exception("NOOOOOO")
-        return "%s%s" % (self.crypto_data.data, self.mac)
+        return "%s%s" % (self.crypto_data.data.decode('utf-8'), self.mac.decode('utf-8'))
 
 
 class CBCCryptoContainer(CryptoContainer):
@@ -1275,8 +1274,11 @@ class CBCCryptoContainer(CryptoContainer):
         return b"".join([self.explicit_iv, self.crypto_data.data, self.mac, self.padding, bytes(self.padding_len, encoding='utf-8')])
 
     def __str__(self):
-        raise Exception("NO NO NO")
-        return "%s%s%s%s%s" % (self.explicit_iv, self.crypto_data.data, self.mac, self.padding, self.padding_len)
+        return "%s%s%s%s%s" % (self.explicit_iv.decode('utf-8'),
+                               self.crypto_data.data.decode('utf-8'),
+                               self.mac.decode('utf-8'),
+                               self.padding.decode('utf-8'),
+                               self.padding_len)
 
 
 class EAEADCryptoContainer(CryptoContainer):
@@ -1321,9 +1323,13 @@ class IAEADCryptoContainer(CryptoContainer):
         crypto_data = CryptoData.from_context(tls_ctx, ctx, data)
         return IAEADCryptoContainer.from_context(tls_ctx, ctx, crypto_data)
 
+    def __bytes__(self):
+        return b"".join([self.crypto_data.data, struct.pack("!B", self.crypto_data.content_type), self.crypto_data.padding])
+
     def __str__(self):
-        raise Exception("shit")
-        return b"%s%s%s" % (self.crypto_data.data, struct.pack("!B", self.crypto_data.content_type), self.crypto_data.padding)
+        return "%s%s%s" % (self.crypto_data.data.decode('utf-8'),
+                           struct.pack("!B", self.crypto_data.content_type).decode('utf-8'),
+                           self.crypto_data.padding.decode('utf-8'))
 
 
 class CryptoContainerFactory(object):
