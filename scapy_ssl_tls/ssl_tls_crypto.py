@@ -343,7 +343,7 @@ TLS Session Context:
             cert = cert_list.certificates[0].data
             # If we have a default keystore, create an RSA keystore and populate it from data on the wire
             if isinstance(self.server_ctx.asym_keystore, tlsk.EmptyAsymKeystore):
-                self.server_ctx.asym_keystore = tlsk.RSAKeystore.from_der_certificate(cert)
+                self.server_ctx.asym_keystore = tlsk.RSAKeystore.from_der_certificate(bytes(cert))
             # Else keystore was assigned by user. Just add cert from the wire to the store
             else:
                 self.server_ctx.asym_keystore.certificate = cert

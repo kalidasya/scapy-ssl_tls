@@ -173,12 +173,12 @@ class TestTLSDissector(unittest.TestCase):
     def _static_tls_handshake(self):
         # Setup static parameters, so PRF output is reproducible
         tls_ctx = tlsc.TLSSessionCtx()
-        tls_ctx.premaster_secret = "\x03\x01" + "C" * 46
+        tls_ctx.premaster_secret = b"\x03\x01" + b"C" * 46
         client_hello = tls.TLSRecord(
             version="TLS_1_0") / tls.TLSHandshakes(handshakes=[tls.TLSHandshake() / tls.TLSClientHello(
             version="TLS_1_0",
             gmt_unix_time=1234,
-            random_bytes="A" * 28,
+            random_bytes=b"A" * 28,
             session_id="",
             compression_methods=[0],
             cipher_suites=(
@@ -238,12 +238,12 @@ class TestTLSDissector(unittest.TestCase):
         self.assertTrue(server_finished_records.haslayer(tls.TLSFinished))
         self.assertEqual(server_finished_records[tls.TLSHandshakes].padding_len, ord("\x0b"))
         self.assertEqual(server_finished_records[tls.TLSHandshakes].padding,
-                         "\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b")
+                         b"\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b")
         self.assertEqual(server_finished_records[tls.TLSHandshakes].mac,
-                         "\xac'\x9a\x94\xf6t'\x18E\x03nD\x0b\xf4\xf7\xf5T\xce\x05q")
-        self.assertEqual(server_finished_records[tls.TLSFinished].data, "3\x13V\xac\x90.6\x89~7\x13\xbd")
+                         b"\xac'\x9a\x94\xf6t'\x18E\x03nD\x0b\xf4\xf7\xf5T\xce\x05q")
+        self.assertEqual(server_finished_records[tls.TLSFinished].data, b"3\x13V\xac\x90.6\x89~7\x13\xbd")
         self.assertTrue(app_response_records.haslayer(tls.TLSPlaintext))
-        self.assertTrue(app_response_records[3][tls.TLSPlaintext].data.startswith("HTTP"))
+        self.assertTrue(app_response_records[3][tls.TLSPlaintext].data.startswith(b"HTTP"))
 
     def test_cleartext_alert_is_not_decrypted_with_block_cipher(self):
         tls_ctx = self._static_tls_handshake()
@@ -575,7 +575,7 @@ class TestPCAP(unittest.TestCase):
         record = pkts.pop()
         self.assertTrue(record.haslayer(tls.TLSRecord))
         self.assertTrue(record.haslayer(tls.TLSChangeCipherSpec))
-        self.assertEqual(record[tls.TLSChangeCipherSpec].message, '\x01')
+        self.assertEqual(record[tls.TLSChangeCipherSpec].message, b'\x01')
         # TLSFinished - encrypted
         record = pkts.pop()
         self.assertTrue(record.haslayer(tls.TLSRecord))
@@ -601,7 +601,7 @@ class TestPCAP(unittest.TestCase):
         record = pkts.pop()
         self.assertTrue(record.haslayer(tls.TLSRecord))
         self.assertTrue(record.haslayer(tls.TLSChangeCipherSpec))
-        self.assertEqual(record[tls.TLSChangeCipherSpec].message, '\x01')
+        self.assertEqual(record[tls.TLSChangeCipherSpec].message, b'\x01')
         # TLSFinished - encrypted
         record = pkts.pop()
         self.assertTrue(record.haslayer(tls.TLSRecord))
@@ -873,7 +873,7 @@ UM6j0ZuSMFOCr/lGPAoOQU0fskidGEHi1/kW+suSr28TqsyYZpwBDQ==
 
         keystore1 = tlsk.RSAKeystore.from_der_certificate(self.der_cert)
         pubkey_extract_from_der = keystore1.public
-        keystore2 = tlsk.RSAKeystore.from_der_certificate(pkt[tls.TLSCertificate].data)
+        keystore2 = tlsk.RSAKeystore.from_der_certificate(bytes(pkt[tls.TLSCertificate].data))
         pubkey_extract_from_tls_certificate = keystore2.public
 
         self.assertEqual(pubkey_extract_from_der, pubkey_extract_from_tls_certificate)

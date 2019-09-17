@@ -21,7 +21,7 @@ def rsa_public_from_der_certificate(certificate):
         # received completely, in that case, we'll try to extract it anyway
         # using the old method.
         # TODO: get rid of the old method and always expect X509Cert obj ?
-        return RSA.importKey(str(certificate.tbsCertificate.subjectPublicKeyInfo))
+        return RSA.importKey(certificate.tbsCertificate.subjectPublicKeyInfo)
     except AttributeError:
         pass
 
@@ -36,9 +36,9 @@ def rsa_public_from_der_certificate(certificate):
     # hex: 06 09 2A 86 48 86 F7 0D 01 01 01
     subject_public_key_info = None
     for seq in tbs_certificate:
-        if not isinstance(seq, str):
+        if not isinstance(seq, bytes) and not isinstance(seq, bytearray):
             continue     # skip numerics and non sequence stuff
-        if "\x2A\x86\x48\x86\xF7\x0D\x01\x01\x01" in seq:
+        if b"\x2A\x86\x48\x86\xF7\x0D\x01\x01\x01" in seq:
             subject_public_key_info = seq
 
     if subject_public_key_info is None:

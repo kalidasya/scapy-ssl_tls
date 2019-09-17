@@ -1408,14 +1408,14 @@ class SSL(Packet):
         # TLSFinished, encrypted
         if record.haslayer(TLSRecord) and record[TLSRecord].content_type == TLSContentType.HANDSHAKE \
                 and record.haslayer(TLSCiphertext):
-            encrypted_payload = record.payload
+            encrypted_payload = bytes(record.payload)
             decrypted_type = TLSHandshakes
         # Do not attempt to decrypt cleartext Alerts and CCS
         elif record.haslayer(TLSAlert) and record.length != 0x2:
-            encrypted_payload = record.payload
+            encrypted_payload = bytes(record.payload)
             decrypted_type = TLSAlert
         elif record.haslayer(TLSChangeCipherSpec) and record.length != 0x1:
-            encrypted_payload = record.payload
+            encrypted_payload = bytes(record.payload)
             decrypted_type = TLSChangeCipherSpec
         # Application data
         elif record.haslayer(TLSCiphertext):
