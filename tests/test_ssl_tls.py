@@ -712,9 +712,7 @@ xVgf/Neb/avXgIgi6drj8dp1fWA=
             return crypto_container
 
         # Return cleartext
-        def encrypt(x):
-            print(x.__class__)
-            return bytes(x)
+        encrypt = lambda x: bytes(x)
         data = b"ABCD"
         pkt = tls.TLSPlaintext(data=data)
         raw = tls.to_raw(pkt, self.tls_ctx, include_record=False, compress_hook=custom_compress,
