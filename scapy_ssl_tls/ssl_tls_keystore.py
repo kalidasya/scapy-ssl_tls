@@ -75,7 +75,7 @@ def int_to_vector(num, fmt="!H"):
 
 
 def str_to_int(str_):
-    if str_ == "":
+    if len(str_) == 0:
         return 0
     return int(binascii.hexlify(str_), 16)
 

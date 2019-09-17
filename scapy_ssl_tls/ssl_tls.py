@@ -903,7 +903,7 @@ class TLSCertificateList(Packet):
     def guess_payload_class(self, payload):
         tls13_cert = TLS13Certificate(payload)
         tls10_cert = TLS10Certificate(payload)
-        certs_len = lambda certs: len(b"".join([cert for cert in certs.certificates]))
+        certs_len = lambda certs: len(b"".join([bytes(cert) for cert in certs.certificates]))
         if tls13_cert.request_context_length == len(tls13_cert.request_context) and tls13_cert.length == certs_len(tls13_cert):
             return TLS13Certificate
         elif tls10_cert.length == certs_len(tls10_cert):
@@ -956,7 +956,7 @@ class TLSDecryptablePacket(PacketLengthFieldPayload):
     padding_field = StrLenField("padding", "", length_from=lambda pkt: pkt.padding_len)
     padding_len_field = ConditionalField(
         XFieldLenField("padding_len", None, length_of="padding", fmt="B"),
-        lambda pkt: True if pkt and hasattr(pkt, "padding") and pkt.padding != "" else False)
+        lambda pkt: True if pkt and hasattr(pkt, "padding") and pkt.padding else False)
     decryptable_fields = [mac_field, padding_field, padding_len_field]
 
     def __init__(self, *args, **fields):
@@ -971,6 +971,8 @@ class TLSDecryptablePacket(PacketLengthFieldPayload):
         for field in self.decryptable_fields:
             if field not in self.fields_desc:
                 self.fields_desc.append(field)
+
+
         PacketLengthFieldPayload.__init__(self, *args, **fields)
 
     def pre_dissect(self, raw_bytes):
@@ -1374,7 +1376,7 @@ class SSL(Packet):
     def do_decrypt_payload(self, record):
         content_type = None
         encrypted_payload, layer = self._get_encrypted_payload(record)
-        if encrypted_payload is not None or self.tls_ctx.negotiated.version >= TLSVersion.TLS_1_3:
+        if encrypted_payload is not None or (self.tls_ctx.negotiated.version is not None and self.tls_ctx.negotiated.version >= TLSVersion.TLS_1_3):
             try:
                 if self.tls_ctx.client:
                     cleartext = self.tls_ctx.server_ctx.crypto_ctx.decrypt(encrypted_payload,
@@ -1455,6 +1457,7 @@ def to_raw(pkt, tls_ctx, include_record=True, compress_hook=None, pre_encrypt_ho
         post_compress_data = compress_hook(comp_method, data)
     else:
         post_compress_data = comp_method.compress(data)
+
 
     factory = tlsc.CryptoContainerFactory(tls_ctx)
     crypto_data = tlsc.CryptoData.from_context(tls_ctx, ctx, post_compress_data)

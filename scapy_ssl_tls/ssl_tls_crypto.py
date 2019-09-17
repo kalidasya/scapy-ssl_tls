@@ -84,10 +84,6 @@ class TLSContext(object):
     def sym_keystore(self, value):
         if value not in self.sym_keystore_history:
             self.sym_keystore_history.append(value)
-        # print("adding key with len {}".format(len(value.key)))
-        # if len(value.key) not in [16,24,32]:
-        #     import traceback
-        #     print("\n".join(traceback.format_stack()))
         self.__sym_keystore = value
 
     def load_rsa_keys_from_file(self, key_file, client=False):
@@ -232,7 +228,6 @@ TLS Session Context:
                 client_shares = client_hello[tls.TLSClientHelloKeyShare].client_shares
                 for client_share in client_shares:
                     is_user_keystore = False
-                    # print("lofa {}-{} {}-{}".format(client_share.named_group, client_share.named_group.__class__, client_share.__class__, client_share.key_exchange))
                     keystore = tlsk.tls_group_to_keystore(client_share.named_group, client_share.key_exchange)
                     # Check if user has already inserted a keystore for the given group
                     # If so do not replace it, since that would remove the private key
@@ -447,7 +442,6 @@ TLS Session Context:
                 # TODO: Calculate PMS
         else:
             warnings.warn("Unknown client key exchange")
-        # print("DEGENERATE prf class {}\n premaster_sec {}\n client ran {}\n server ran{}".format(self.prf.__class__, self.premaster_secret, len(self.client_ctx.random), len(self.server_ctx.random)))
         self.sec_params = TLSSecurityParameters.from_pre_master_secret(self.prf, self.negotiated.ciphersuite,
                                                                        self.premaster_secret, self.client_ctx.random,
                                                                        self.server_ctx.random)
@@ -508,7 +502,6 @@ TLS Session Context:
 
     def __generate_secrets(self):
         a = self.sec_params.master_secret
-        # print("ANYADAT secret {} \nclass{}\n length {}".format(a, a.__class__, len(a)))
         if isinstance(self.client_ctx.sym_keystore, tlsk.EmptySymKeyStore):
             self.client_ctx.sym_keystore = self.sec_params.client_keystore
         if isinstance(self.server_ctx.sym_keystore, tlsk.EmptySymKeyStore):
@@ -653,14 +646,10 @@ TLS Session Context:
                                                      self.prf.digest.new(b"".join(verify_data)).digest(),
                                                      num_bytes=12)
             else:
-                # print("master")
-                # print(":".join("{:02x}".format(c) for c in self.master_secret))
-
                 prf_verify_data = self.prf.get_bytes(self.master_secret, label,
                                                      b"".join([MD5.new(b"".join(verify_data)).digest(),
                                                                SHA.new(b"".join(verify_data)).digest()]),
                                                      num_bytes=12)
-        # print("FASZKALAP {}".format(prf_verify_data.decode('unicode_escape')))
         return prf_verify_data
 
     def get_handshake_digest(self, hash_):
@@ -743,7 +732,6 @@ class TLSPRF(object):
                 self.digest = digest
 
     def get_bytes(self, key, label, random, num_bytes):
-        # print("random {}".format(":".join("{:02x}".format(c) for c in random)))
         if self.tls_version >= tls.TLSVersion.TLS_1_2:
             ret = self._get_bytes(self.digest, key, label, random, num_bytes)
         else:
@@ -752,22 +740,13 @@ class TLSPRF(object):
             key_right = key[-key_len:]
 
             # Get bytes from MD5
-            # print("key {}".format(":".join("{:02x}".format(c) for c in key)))
-            # print("key_left {}\n label {}\n random {} num_bytes {}".format(":".join("{:02x}".format(c) for c in key_left), label, ":".join("{:02x}".format(c) for c in random), num_bytes))
             md5_bytes = self._get_bytes(MD5, key_left, label, random, num_bytes)
-            # print("md5")
-            # print(":".join("{:02x}".format(c) for c in md5_bytes))
             # Get bytes from SHA1
             sha1_bytes = self._get_bytes(SHA, key_right, label, random, num_bytes)
-            # print("sha")
-            # print(":".join("{:02x}".format(c) for c in sha1_bytes))
-
             xored = bytearray()
             for i in range(num_bytes):
                 xored.append(md5_bytes[i] ^ sha1_bytes[i])
             ret = xored
-        # print("get_bytes return")
-        # print(":".join("{:02x}".format(c) for c in ret))
         return ret
 
     def _get_bytes(self, digest, key, label, random, num_bytes):
@@ -775,15 +754,11 @@ class TLSPRF(object):
         if isinstance(key, str):
             key = key.encode('utf-8')
         msg = b"".join([label, random])
-        # print("!!!A!!!! msg {}".format(":".join("{:02x}".format(c) for c in msg)))
-        # print("!!!A!!!! key {}".format(":".join("{:02x}".format(c) for c in key)))
-
         block = HMAC.new(key=key, msg=msg, digestmod=digest).digest()
         while len(bytes_) < num_bytes:
             msg = b"".join([block, label, random])
             bytes_ += HMAC.new(key=key, msg=msg, digestmod=digest).digest()
             block = HMAC.new(key=key, msg=block, digestmod=digest).digest()
-        # print("!!!A!!!! msg2 {}".format(":".join("{:02x}".format(c) for c in bytes_[:num_bytes])))
         return bytes_[:num_bytes]
 
 
@@ -1049,9 +1024,6 @@ class CBCCryptoContext(CryptoContext):
             self.__init_ciphers()
 
     def __init_ciphers(self):
-        # print("SHITSHIT {} {}".format(self.ctx.__class__, self.ctx.sym_keystore.__class__))
-        # print("SHIT {} {} {}".format(self.ctx.sym_keystore.key, len(self.ctx.sym_keystore.key), self.ctx.sym_keystore))
-
         self.enc_cipher = self.sec_params.cipher_type.new(self.ctx.sym_keystore.key, mode=self.sec_params.cipher_mode,
                                                           IV=self.ctx.sym_keystore.iv)
         self.dec_cipher = self.sec_params.cipher_type.new(self.ctx.sym_keystore.key, mode=self.sec_params.cipher_mode,
@@ -1772,7 +1744,6 @@ class TLSSecurityParameters(object):
         sec_params = cls(prf, cipher_suite, client_random, server_random)
         sec_params.pms = pms
         sec_params.generate_master_secret(pms, client_random, server_random)
-        # print("degener sec_params {}\n{}".format(sec_params.__class__, sec_params))
         sec_params.client_keystore, sec_params.server_keystore = sec_params.init_keys(client_random, server_random)
         return sec_params
 
@@ -1797,10 +1768,8 @@ class TLSSecurityParameters(object):
         i += self.iv_length
         server_iv = data[i:i + self.iv_length]
         i += self.iv_length
-        # print("CLIENT KEYSTORE {} len {}".format(client_key, len(client_key)))
         client_keystore = tlsk.CipherKeyStore(self.negotiated_crypto_param, client_key, client_mac_key,
                                               client_iv)
-        # print("SERVER KEYSTORE {} len {}".format(server_key, len(server_key)))
         server_keystore = tlsk.CipherKeyStore(self.negotiated_crypto_param, server_key, server_mac_key,
                                               server_iv)
         return client_keystore, server_keystore
