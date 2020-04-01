@@ -33,7 +33,7 @@ if __name__ == "__main__":
 
     p.show()
     print ("sending TLS payload")
-    s.sendall(str(p))
+    s.sendall(bytes(p))
     resp = s.recv(1024 * 8)
     print ("received, %d --  %s" % (len(resp), repr(resp)))
     SSL(resp).show()

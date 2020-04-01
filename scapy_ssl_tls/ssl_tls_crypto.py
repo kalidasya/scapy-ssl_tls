@@ -1286,7 +1286,7 @@ class EAEADCryptoContainer(CryptoContainer):
         self.aead = b"".join([sequence_, content_type_, version_, len_])
 
     def __bytes__(self):
-        return self.crypto_data.data
+        return bytes(self.crypto_data.data)
 
     def __str__(self):
         return self.crypto_data.data.decode('utf-8')

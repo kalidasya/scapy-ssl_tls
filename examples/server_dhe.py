@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+import sys
 try:
     # This import works from the project directory
     from scapy_ssl_tls.ssl_tls import *

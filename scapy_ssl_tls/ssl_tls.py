@@ -1277,9 +1277,9 @@ class TLSSocket(object):
         prev_timeout = self._s.gettimeout()
         self._s.settimeout(timeout)
         if self.ctx.must_encrypt:
-            self._s.sendall(tls_to_raw(pkt, self.tls_ctx, True, self.compress_hook, self.pre_encrypt_hook, self.encrypt_hook))
+            self._s.sendall(bytes(tls_to_raw(pkt, self.tls_ctx, True, self.compress_hook, self.pre_encrypt_hook, self.encrypt_hook)))
         else:
-            self._s.sendall(pkt)
+            self._s.sendall(bytes(pkt))
         self.tls_ctx.insert(pkt, self._get_pkt_origin('out'))
         self._s.settimeout(prev_timeout)
 
@@ -1296,7 +1296,7 @@ class TLSSocket(object):
             except socket.timeout:
                 break
         self._s.settimeout(prev_timeout)
-        records = TLS("".join(resp), ctx=self.tls_ctx, _origin=self._get_pkt_origin('in'))
+        records = TLS(b"".join(resp), ctx=self.tls_ctx, _origin=self._get_pkt_origin('in'))
         return records
 
     def accept(self):

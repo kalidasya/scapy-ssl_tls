@@ -2,6 +2,7 @@
 # -*- coding: UTF-8 -*-
 # Author : <github.com/tintinweb/scapy-ssl_tls>
 
+import base64
 import socket
 import functools
 
@@ -291,7 +292,7 @@ class TLSClientAutomata(Automaton):
     @ATMT.state(final=1)
     def END(self, p=None):
         try:
-            return ''.join(pkt[TLSPlaintext].data for pkt in p.records)
+            return b''.join(pkt[TLSPlaintext].data for pkt in p.records)
         except AttributeError:
             return p
 
@@ -365,8 +366,8 @@ class TLSServerAutomata(Automaton):
 
         pemo = pem_get_objects(self.pemcert)
         for key_pk in (k for k in pemo.keys() if "CERTIFICATE" in k.upper()):
-            self.dercert = ''.join(
-                line for line in pemo[key_pk].get("full").strip().split("\n") if not "-" in line).decode("base64")
+            self.dercert = base64.b64decode(''.join(
+                line for line in pemo[key_pk].get("full").strip().split("\n") if not "-" in line))
             break
         self.debug(1, "parse_args - done")
 
