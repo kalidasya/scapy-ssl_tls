@@ -53,7 +53,7 @@ if __name__ == "__main__":
                                                      cipher_suites=list(range(0xff)) + [0x5600],)])
         p.show()
         print ("sending TLS payload")
-        s.sendall(str(p))
+        s.sendall(bytes(p))
         resp = s.recv(10240)
         s.close()
         print ("received, %s" % repr(resp))

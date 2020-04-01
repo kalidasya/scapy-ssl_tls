@@ -37,7 +37,7 @@ class TCPConnection(object):
         last_exception = None
         self.target = target
         self._s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        for t in xrange(1, 4):
+        for t in range(1, 4):
             try:
                 self._s.connect(target)
                 break
@@ -53,7 +53,7 @@ class TCPConnection(object):
     def sendall(self, pkt, timeout=None):
         if timeout:
             self._s.settimeout(timeout)
-        self._s.sendall(str(pkt))
+        self._s.sendall(bytes(pkt))
 
     def recvall(self, size=8192 * 4, timeout=None):
         resp = []
@@ -67,7 +67,7 @@ class TCPConnection(object):
                 resp.append(data)
             except socket.timeout:
                 break
-        return SSL(''.join(resp))
+        return SSL(b''.join(resp))
 
 
 class TLSInfo(object):
@@ -473,7 +473,7 @@ class TLSScanner(object):
         versionlist=(
             (k,
              v) for k,
-            v in TLS_VERSIONS.iteritems() if v.startswith("TLS_") or v.startswith("SSL_"))):
+            v in TLS_VERSIONS.items() if v.startswith("TLS_") or v.startswith("SSL_"))):
         for magic, name in versionlist:
             pkt = TLSRecord(version=magic) / \
                   TLSHandshakes(handshakes=[TLSHandshake() /

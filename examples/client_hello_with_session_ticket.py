@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import sys
 try:
     from scapy_ssl_tls.ssl_tls import *
 except ImportError:
